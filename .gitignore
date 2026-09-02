@@ -1,0 +1,55 @@
+# === Java / Spring Boot ===
+*.class
+*.log
+*.tmp
+*.out
+*.bak
+*.swp
+
+# === Maven / Gradle Wrapper ===
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/   # Allow build dirs inside source if needed
+
+# === IDE Specific ===
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# === OS Specific ===
+.DS_Store
+Thumbs.db
+
+# === Test Reports & Coverage ===
+test-output/
+reports/
+jacoco.exec
+*.lcov
+
+# === Spring Boot Specific ===
+# Embedded server temp files
+.spring-boot-devtools.properties
+.spring-boot-devtools.json
+
+# === Multi-Project Specific ===
+**/build/
+**/.gradle/
+**/out/
+**/target/
+
+# === Logs ===
+logs/
+*.log
