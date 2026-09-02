@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17
+    container_name: postgres-bikedb
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: nopass
+      POSTGRES_DB: bikedb
+      TZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
+
