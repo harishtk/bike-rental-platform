@@ -2,6 +2,9 @@ package com.bikerental.bike.infrastructure.persistence.bike;
 
 import com.bikerental.bike.application.bike.BikeRepository;
 import com.bikerental.bike.domain.bike.Bike;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -40,6 +43,12 @@ public class BikeRepositoryAdapter implements BikeRepository {
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Page<Bike> findAll(Specification<BikeEntity> spec, Pageable pageable) {
+        return repository.findAll(spec, pageable)
+                .map(mapper::toDomain);
     }
 
     @Override

@@ -14,5 +14,10 @@ spring:
       format_sql: true
   database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+logging:
+  level:
+    debug: org.springframework.web
+    trace: org.springframework.boot
+
 server:
   port: 8080

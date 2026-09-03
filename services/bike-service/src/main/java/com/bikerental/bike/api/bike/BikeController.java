@@ -4,6 +4,8 @@ import com.bikerental.bike.application.bike.BikeService;
 import com.bikerental.bike.application.bike.CreateBikeCommand;
 import com.bikerental.bike.domain.bike.Bike;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,8 +50,15 @@ public class BikeController {
     }
 
     @GetMapping
-    public List<BikeResponse> getBikes() {
-        return bikeService.getAll()
+    public List<BikeResponse> getBikes(
+            @RequestParam(name = "stationId", required = false) UUID stationId,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(name = "size", required = false, defaultValue = "10") int pageSize
+    ) {
+        Pageable pageable = PageRequest.of(page, pageSize);
+
+        return bikeService.getAll(stationId, status, pageable)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
