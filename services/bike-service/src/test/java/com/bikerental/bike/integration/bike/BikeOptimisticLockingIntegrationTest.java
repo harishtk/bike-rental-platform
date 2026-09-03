@@ -2,11 +2,13 @@ package com.bikerental.bike.integration.bike;
 
 import com.bikerental.bike.application.bike.BikeRepository;
 import com.bikerental.bike.domain.bike.Bike;
+import com.bikerental.bike.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -15,7 +17,12 @@ import java.util.UUID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest
-public class BikeOptimisticLockingIntegrationTest {
+@Sql(
+        scripts = "/sql/cleanup-bikes.sql",
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
+)
+public class BikeOptimisticLockingIntegrationTest
+        extends AbstractPostgresIntegrationTest {
 
     @Autowired
     private BikeRepository bikeRepository;

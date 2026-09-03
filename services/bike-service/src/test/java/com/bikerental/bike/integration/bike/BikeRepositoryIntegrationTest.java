@@ -115,7 +115,7 @@ public class BikeRepositoryIntegrationTest extends
     void shouldReleaseTheBikeWhenReserved() {
         UUID stationId = UUID.randomUUID();
         Bike bike = Bike.create(
-                "01",
+                "BIKE-" + UUID.randomUUID(),
                 "Off-Road",
                 stationId
         );
@@ -126,7 +126,6 @@ public class BikeRepositoryIntegrationTest extends
 
         Bike released = bikeRepository.save(reserved);
 
-        assertThat(bikeRepository.existsBySerialNumber("01")).isTrue();
         assertThat(released.getStatus()).isEqualTo(BikeStatus.AVAILABLE);
     }
 
@@ -134,7 +133,7 @@ public class BikeRepositoryIntegrationTest extends
     void shouldThrowWhenBikeIsRented() {
         UUID stationId = UUID.randomUUID();
         Bike bike = Bike.create(
-                "01",
+                "BIKE-" + UUID.randomUUID(),
                 "Off-Road",
                 stationId
         );

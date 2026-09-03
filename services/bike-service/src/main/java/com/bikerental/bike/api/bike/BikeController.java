@@ -1,10 +1,10 @@
 package com.bikerental.bike.api.bike;
 
+import com.bikerental.bike.api.common.PagedResponse;
 import com.bikerental.bike.application.bike.BikeService;
 import com.bikerental.bike.application.bike.CreateBikeCommand;
 import com.bikerental.bike.domain.bike.Bike;
 import jakarta.validation.Valid;
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -54,7 +53,7 @@ public class BikeController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BikeResponse>> getBikes(
+    public ResponseEntity<PagedResponse<BikeResponse>> getBikes(
             @RequestParam(name = "stationId", required = false) UUID stationId,
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "page", required = false, defaultValue = "0") int page,
@@ -62,12 +61,9 @@ public class BikeController {
     ) {
         Pageable pageable = PageRequest.of(page, pageSize);
 
-        return ResponseEntity.ok(
-                bikeService.getAll(stationId, status, pageable)
-                        .stream()
-                        .map(mapper::toResponse)
-                        .toList()
-        );
+        var pagedResponse = PagedResponse.of(bikeService.getAll(stationId, status, pageable)
+                .map(mapper::toResponse));
+        return ResponseEntity.ok(pagedResponse);
     }
 
     @PostMapping("/{bikeId}/reserve")

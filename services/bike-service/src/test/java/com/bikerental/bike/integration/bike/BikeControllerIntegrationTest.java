@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Sql(
         scripts = "/sql/cleanup-bikes.sql",
-        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 public class BikeControllerIntegrationTest extends
         AbstractPostgresIntegrationTest {
@@ -120,10 +120,10 @@ public class BikeControllerIntegrationTest extends
         );
 
         mockMvc.perform(
-                get("/api/v1/bikes")
-        )
+                        get("/api/v1/bikes")
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.content.length()").value(2));
     }
 
     @Test
