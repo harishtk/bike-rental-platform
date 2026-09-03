@@ -8,6 +8,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
 import static com.jayway.jsonpath.JsonPath.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -33,7 +35,7 @@ public class BikeControllerIntegrationTest extends
     void shouldCreateBike() throws Exception {
         String request = """
                 {
-                    "serialNumber": "1212121212",
+                    "serialNumber": "01",
                     "type": "Off-Road",
                     "stationId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24"
                 }
@@ -47,7 +49,7 @@ public class BikeControllerIntegrationTest extends
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath(
                         "$.serialNumber",
-                        is("1212121212")
+                        is("01")
                 ))
                 .andExpect(jsonPath(
                         "$.stationId",
@@ -57,5 +59,157 @@ public class BikeControllerIntegrationTest extends
                         "$.status",
                         is("AVAILABLE")
                 ));
+    }
+
+    @Test
+    void shouldGetBikeById() throws Exception {
+        String request = """
+                {
+                    "serialNumber": "01",
+                    "type": "Off-Road",
+                    "stationId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24"
+                }
+                """;
+
+        String response = mockMvc.perform(
+                        post("/api/v1/bikes")
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String bikeId = read(response, "$.id");
+
+        mockMvc.perform(
+                get("/api/v1/bikes/{bikeId}", bikeId)
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.id",
+                        is(bikeId)
+                ))
+                .andExpect(jsonPath(
+                        "$.serialNumber",
+                        is("01")
+                ));
+    }
+
+    @Test
+    void shouldReturn404WhenBikeDoesNotExist() throws Exception {
+        mockMvc.perform(
+                get("/api/v1/bikes/{bikeId}", "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24")
+        )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldGetAllBikes() throws Exception {
+        UUID stationId = UUID.randomUUID();
+        createBike(
+                "01",
+                "type-1",
+                stationId
+        );
+
+        createBike(
+                "02",
+                "type-2",
+                stationId
+        );
+
+        mockMvc.perform(
+                get("/api/v1/bikes")
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void shouldRejectInvalidBike() throws Exception {
+        String request = """
+                {
+                    "serialNumber": "",
+                    "type": "",
+                    "stationId": ""
+                }
+                """;
+
+        mockMvc.perform(
+                post("/api/v1/bikes")
+                        .contentType(APPLICATION_JSON)
+                        .content(request)
+        )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath(
+                        "$.status",
+                        is(400)
+                ))
+                .andExpect(jsonPath(
+                        "$.message",
+                        is("Validation failed")
+                ))
+                .andExpect(jsonPath(
+                        "$.data",
+                        hasSize(3)
+                ));
+    }
+
+    @Test
+    void shouldRejectDuplicateSerialNumber() throws Exception {
+        UUID stationId = UUID.randomUUID();
+
+        String request = """
+                {
+                    "serialNumber": "01",
+                    "type": "type-1",
+                    "stationId": "%s"
+                }
+                """.formatted(stationId);
+
+        mockMvc.perform(
+                post("/api/v1/bikes")
+                        .contentType(APPLICATION_JSON)
+                        .content(request)
+        )
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(
+                post("/api/v1/bikes")
+                        .contentType(APPLICATION_JSON)
+                        .content(request)
+        )
+                .andExpect(status().isPreconditionFailed())
+                .andExpect(jsonPath(
+                        "$.code",
+                        is("DUPLICATE_BIKE_SERIAL_NUMBER")
+                ));
+    }
+
+    private void createBike(
+            String serialNumber,
+            String type,
+            UUID stationId
+    ) throws Exception {
+
+        String request = """
+                {
+                    "serialNumber": "%s",
+                    "type": "%s",
+                    "stationId": "%s"
+                }
+                """.formatted(
+                serialNumber,
+                type,
+                stationId
+        );
+
+        mockMvc.perform(
+                post("/api/v1/bikes")
+                        .contentType(APPLICATION_JSON)
+                        .content(request)
+        ).andExpect(status().isCreated());
     }
 }

@@ -6,9 +6,74 @@
  */
 plugins {
     id("java")
+    id("jacoco")
 }
 
 allprojects {
     group = "com.bikerental"
     version = "0.0.1-SNAPSHOT"
+}
+
+subprojects {
+    apply plugin: "java"
+    apply plugin: "jacoco"
+
+    jacoco {
+        toolVersion = "0.8.11"
+    }
+
+    test {
+        useJUnitPlatform()
+        finalizedBy(jacocoTestReport)
+    }
+
+    jacocoTestReport {
+        dependsOn(test)
+        reports {
+            xml.required = true
+            html.required = true
+            html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+        }
+    }
+
+    jacocoTestCoverageVerification {
+        violationRules {
+            rule {
+                limit {
+                    minimum = 0.5
+                }
+            }
+
+            rule {
+                enabled = false
+                element = 'CLASS'
+                includes = ['org.gradle.*']
+
+                limit {
+                    counter = 'LINE'
+                    value = 'TOTALCOUNT'
+                    maximum = 0.3
+                }
+            }
+        }
+    }
+
+    check.dependsOn jacocoTestCoverageVerification
+}
+
+tasks.register("jacocoRootReport", JacocoReport) {
+    group = "Verification"
+    description = "Generates an aggregated JaCoCo code coverage report for all submodules."
+
+    executionData.setFrom(files(subprojects.jacocoTestReport.executionData))
+
+    sourceDirectories.setFrom(files(subprojects.sourceSets.main.allSource.srcDirs))
+
+    classDirectories.setFrom(files(subprojects.sourceSets.main.output))
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir("reports/jacoco/rootReport/html")
+    }
 }

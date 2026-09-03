@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/bikes")
 public class BikeController {
@@ -33,5 +36,36 @@ public class BikeController {
         );
 
         return mapper.toResponse(bike);
+    }
+
+    @GetMapping("/{bikeId}")
+    public BikeResponse getBike(
+            @PathVariable UUID bikeId
+    ) {
+        Bike bike = bikeService.getById(bikeId);
+
+        return mapper.toResponse(bike);
+    }
+
+    @GetMapping
+    public List<BikeResponse> getBikes() {
+        return bikeService.getAll()
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    @PostMapping("/{bikeId}/reserve")
+    public BikeResponse reserveBike(
+            @PathVariable UUID bikeId
+    ) {
+        return mapper.toResponse(bikeService.reserve(bikeId));
+    }
+
+    @PostMapping("/{bikeId}/release")
+    public BikeResponse releaseBike(
+            @PathVariable UUID bikeId
+    ) {
+        return mapper.toResponse(bikeService.release(bikeId));
     }
 }

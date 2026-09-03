@@ -10,10 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
 
 @ActiveProfiles("test")
 @Sql(
@@ -55,5 +55,55 @@ public class BikeRepositoryIntegrationTest extends
         assertThat(retrieved.getId()).isEqualTo(bike.getId());
         assertThat(retrieved.getSerialNumber()).isEqualTo("1829319291923");
         assertThat(retrieved.getVersion()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldReturnEmptyBikeWhenBikeDoesNotExist() {
+        UUID bikeId = UUID.randomUUID();
+
+        assertThat(bikeRepository.findById(bikeId)).isEmpty();
+    }
+
+    @Test
+    void shouldFindAllBikes() {
+        UUID stationId = UUID.randomUUID();
+        bikeRepository.save(
+                Bike.create(
+                        "01",
+                        "type-1",
+                        stationId
+                )
+        );
+        bikeRepository.save(
+                Bike.create(
+                        "02",
+                        "type-2",
+                        stationId
+                )
+        );
+
+        List<Bike> bikes = bikeRepository.findAll();
+
+        assertThat(bikes)
+                .hasSize(2)
+                .extracting(Bike::getSerialNumber)
+                .containsExactlyInAnyOrder(
+                        "01",
+                        "02"
+                );
+    }
+
+    @Test
+    void shouldReserveTheBikeWhenReserved() {
+        UUID stationId = UUID.randomUUID();
+        Bike bike = Bike.create(
+                "01",
+                "Off-Road",
+                stationId
+        );
+
+        bikeRepository.save(bike);
+
+        assertThat(bikeRepository.existsBySerialNumber("01")).isTrue();
     }
 }

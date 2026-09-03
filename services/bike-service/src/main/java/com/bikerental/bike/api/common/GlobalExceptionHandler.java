@@ -1,5 +1,7 @@
 package com.bikerental.bike.api.common;
 
+import com.bikerental.bike.application.bike.BikeNotFoundException;
+import com.bikerental.bike.application.bike.DuplicateBikeSerialNumberException;
 import com.bikerental.bike.application.station.StationNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +20,45 @@ public class GlobalExceptionHandler {
     ) {
         var response = ErrorResponse.create(
                 HttpStatus.NOT_FOUND.value(),
-                "STATION_NOT_FOUND",
+                "NOT_FOUND",
                 exception.getMessage(),
                 null
         );
 
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(BikeNotFoundException.class)
+    public ResponseEntity<ErrorResponse<Object>> handleBikeNotFound(
+            BikeNotFoundException exception
+    ) {
+        var response = ErrorResponse.create(
+                HttpStatus.NOT_FOUND.value(),
+                "BIKE_NOT_FOUND",
+                exception.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(DuplicateBikeSerialNumberException.class)
+    public ResponseEntity<ErrorResponse<Object>> handleDuplicateBikeSerialNumber(
+            DuplicateBikeSerialNumberException exception
+    ) {
+        var response = ErrorResponse.create(
+                HttpStatus.PRECONDITION_FAILED.value(),
+                "DUPLICATE_BIKE_SERIAL_NUMBER",
+                exception.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.PRECONDITION_FAILED)
                 .body(response);
     }
 
