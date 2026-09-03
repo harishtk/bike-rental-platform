@@ -23,6 +23,7 @@ subprojects {
     }
 
     test {
+        systemProperty 'user.timezone', 'Asia/Kolkata'
         useJUnitPlatform()
         finalizedBy(jacocoTestReport)
     }

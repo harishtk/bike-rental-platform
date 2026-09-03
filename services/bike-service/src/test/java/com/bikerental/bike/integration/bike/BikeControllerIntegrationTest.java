@@ -16,8 +16,7 @@ import static org.hamcrest.Matchers.is;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
@@ -188,7 +187,79 @@ public class BikeControllerIntegrationTest extends
                 ));
     }
 
-    private void createBike(
+    @Test
+    void shouldGotoMaintenanceWhenMaintenanceCalled() throws Exception {
+        String bikeId = createBike("01", "Off-Road", UUID.randomUUID());
+
+        mockMvc.perform(
+                post("/api/v1/bikes/{bikeId}/maintenance", bikeId)
+        )
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status", is("MAINTENANCE")));
+    }
+
+    @Test
+    void shouldBeAvailableWhenCompleteMaintenanceCalled() throws Exception {
+        String bikeId = createBike("01", "Off-Road", UUID.randomUUID());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/maintenance", bikeId)
+                )
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status", is("MAINTENANCE")));
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/maintenance/complete", bikeId)
+                )
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status", is("AVAILABLE")));
+    }
+
+    @Test
+    void shouldRetireWhenRetireCalled() throws Exception {
+        String bikeId = createBike("01", "Off-Road", UUID.randomUUID());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/retire", bikeId)
+                )
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status", is("RETIRED")));
+    }
+
+    @Test
+    void shouldReturn404WhenReservingNonExistentBike() throws Exception {
+        mockMvc.perform(
+                post("/api/v1/bikes/{bikeId}/reserve", UUID.randomUUID())
+        )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturn409WhenReservingAlreadyReservedBike() throws Exception {
+        String bikeId = createBike("01", "Off-Road", UUID.randomUUID());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/reserve", bikeId)
+                )
+                    .andExpect(status().isAccepted());
+
+        mockMvc.perform(
+                post("/api/v1/bikes/{bikeId}/reserve", bikeId)
+        )
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldReturn409WhenReservingUnReservedBike() throws Exception {
+        String bikeId = createBike("01", "Off-Road", UUID.randomUUID());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/release", bikeId)
+                )
+                .andExpect(status().isConflict());
+    }
+
+    private String createBike(
             String serialNumber,
             String type,
             UUID stationId
@@ -206,10 +277,16 @@ public class BikeControllerIntegrationTest extends
                 stationId
         );
 
-        mockMvc.perform(
+        String response = mockMvc.perform(
                 post("/api/v1/bikes")
                         .contentType(APPLICATION_JSON)
                         .content(request)
-        ).andExpect(status().isCreated());
+        )
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        return read(response, "$.id");
     }
 }

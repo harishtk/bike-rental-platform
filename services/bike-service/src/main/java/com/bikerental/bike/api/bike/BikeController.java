@@ -56,6 +56,7 @@ public class BikeController {
     }
 
     @PostMapping("/{bikeId}/reserve")
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public BikeResponse reserveBike(
             @PathVariable UUID bikeId
     ) {
@@ -63,9 +64,34 @@ public class BikeController {
     }
 
     @PostMapping("/{bikeId}/release")
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public BikeResponse releaseBike(
             @PathVariable UUID bikeId
     ) {
         return mapper.toResponse(bikeService.release(bikeId));
+    }
+
+    @PostMapping("/{bikeId}/maintenance")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public BikeResponse startMaintenance(
+            @PathVariable UUID bikeId
+    ) {
+        return mapper.toResponse(bikeService.startMaintenance(bikeId));
+    }
+
+    @PostMapping("/{bikeId}/maintenance/complete")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public BikeResponse completeMaintenance(
+            @PathVariable UUID bikeId
+    ) {
+        return mapper.toResponse(bikeService.completeMaintenance(bikeId));
+    }
+
+    @PostMapping("/{bikeId}/retire")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public BikeResponse retireBike(
+            @PathVariable UUID bikeId
+    ) {
+        return mapper.toResponse(bikeService.retire(bikeId));
     }
 }

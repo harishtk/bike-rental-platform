@@ -115,8 +115,14 @@ public class Bike {
     }
 
     public void retire() {
-        if (status == BikeStatus.RENTED ||
-                status == BikeStatus.RESERVED) {
+        if (status == BikeStatus.RETIRED) {
+            throw new InvalidBikeStateException(
+                    "Bike is already retired"
+            );
+        }
+
+        if (status != BikeStatus.AVAILABLE &&
+                status != BikeStatus.MAINTENANCE) {
             throw new InvalidBikeStateException(
                     "Bike cannot be retired while " + status
             );

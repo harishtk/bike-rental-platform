@@ -1,5 +1,12 @@
 spring:
+  jackson:
+    time-zone: Asia/Kolkata
+
   jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Kolkata
     hibernate:
       ddl-auto: validate
 

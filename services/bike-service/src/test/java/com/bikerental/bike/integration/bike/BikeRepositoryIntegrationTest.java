@@ -3,6 +3,7 @@ package com.bikerental.bike.integration.bike;
 import com.bikerental.bike.application.bike.BikeRepository;
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeStatus;
+import com.bikerental.bike.domain.bike.InvalidBikeStateException;
 import com.bikerental.bike.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ActiveProfiles("test")
 @Sql(
@@ -94,16 +96,54 @@ public class BikeRepositoryIntegrationTest extends
     }
 
     @Test
-    void shouldReserveTheBikeWhenReserved() {
+    void shouldReserveTheBikeWhenAvailable() {
         UUID stationId = UUID.randomUUID();
         Bike bike = Bike.create(
                 "01",
                 "Off-Road",
                 stationId
         );
+        bike.reserve();
 
-        bikeRepository.save(bike);
+        Bike saved = bikeRepository.save(bike);
 
         assertThat(bikeRepository.existsBySerialNumber("01")).isTrue();
+        assertThat(saved.getStatus()).isEqualTo(BikeStatus.RESERVED);
+    }
+
+    @Test
+    void shouldReleaseTheBikeWhenReserved() {
+        UUID stationId = UUID.randomUUID();
+        Bike bike = Bike.create(
+                "01",
+                "Off-Road",
+                stationId
+        );
+        bike.reserve();
+
+        Bike reserved = bikeRepository.save(bike);
+        reserved.release();
+
+        Bike released = bikeRepository.save(reserved);
+
+        assertThat(bikeRepository.existsBySerialNumber("01")).isTrue();
+        assertThat(released.getStatus()).isEqualTo(BikeStatus.AVAILABLE);
+    }
+
+    @Test
+    void shouldThrowWhenBikeIsRented() {
+        UUID stationId = UUID.randomUUID();
+        Bike bike = Bike.create(
+                "01",
+                "Off-Road",
+                stationId
+        );
+        bike.rent();
+
+        Bike rented = bikeRepository.save(bike);
+
+        assertThatThrownBy(rented::reserve)
+                .isInstanceOf(InvalidBikeStateException.class)
+                .hasMessage("Expected bike status %s but was %s".formatted("AVAILABLE", "RENTED"));
     }
 }

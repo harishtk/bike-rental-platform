@@ -43,6 +43,7 @@ public class BikeService {
         return bikeRepository.findAll();
     }
 
+    @Transactional
     public Bike reserve(UUID bikeId) {
         Bike bike = getById(bikeId);
         bike.reserve();
@@ -64,6 +65,12 @@ public class BikeService {
     public Bike completeMaintenance(UUID bikeId) {
         Bike bike = getById(bikeId);
         bike.completeMaintenance();
+        return bikeRepository.save(bike);
+    }
+
+    public Bike retire(UUID bikeId) {
+        Bike bike = getById(bikeId);
+        bike.retire();
         return bikeRepository.save(bike);
     }
 }

@@ -3,8 +3,10 @@ package com.bikerental.bike.api.common;
 import com.bikerental.bike.application.bike.BikeNotFoundException;
 import com.bikerental.bike.application.bike.DuplicateBikeSerialNumberException;
 import com.bikerental.bike.application.station.StationNotFoundException;
+import com.bikerental.bike.domain.bike.InvalidBikeStateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -59,6 +61,38 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.PRECONDITION_FAILED)
+                .body(response);
+    }
+
+    @ExceptionHandler(InvalidBikeStateException.class)
+    public ResponseEntity<ErrorResponse<Object>> handleDuplicateBikeSerialNumber(
+            InvalidBikeStateException exception
+    ) {
+        var response = ErrorResponse.create(
+                HttpStatus.CONFLICT.value(),
+                "INVALID_BIKE_STATE",
+                exception.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse<Object>> handleConcurrentBikeModification(
+            ObjectOptimisticLockingFailureException exception
+    ) {
+        var response = ErrorResponse.create(
+                HttpStatus.CONFLICT.value(),
+                "BIKE_UNAVAILABLE",
+                exception.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
                 .body(response);
     }
 
