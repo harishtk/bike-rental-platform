@@ -46,22 +46,19 @@ public class StationControllerIntegrationTest extends
         )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath(
-                        "$.status", is(201)
-                ))
-                .andExpect(jsonPath(
-                        "$.data.name",
+                        "$.name",
                         is("Central Station")
                 ))
                 .andExpect(jsonPath(
-                        "$.data.address",
+                        "$.address",
                         is("12 MG Road, Bengaluru")
                 ))
                 .andExpect(jsonPath(
-                        "$.data.capacity",
+                        "$.capacity",
                         is(25)
                 ))
                 .andExpect(jsonPath(
-                        "$.data.status",
+                        "$.status",
                         is("ACTIVE")
                 ));
     }
@@ -86,19 +83,18 @@ public class StationControllerIntegrationTest extends
                 .getResponse()
                 .getContentAsString();
 
-        String stationId = read(response, "$.data.id");
+        String stationId = read(response, "$.id");
 
         mockMvc.perform(
                 get("/api/v1/stations/{stationId}", stationId)
         )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is(200)))
                 .andExpect(jsonPath(
-                        "$.data.id",
+                        "$.id",
                         is(stationId)
                 ))
                 .andExpect(jsonPath(
-                        "$.data.name",
+                        "$.name",
                         is("Central Station")
                 ));
     }
@@ -108,8 +104,7 @@ public class StationControllerIntegrationTest extends
         mockMvc.perform(
                 get("/api/v1/stations/{stationId}", "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24")
         )
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status", is(404)));
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -130,11 +125,7 @@ public class StationControllerIntegrationTest extends
                         get("/api/v1/stations")
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is(200)))
-                .andExpect(jsonPath(
-                        "$.data",
-                        hasSize(2)
-                ));
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test

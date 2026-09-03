@@ -13,11 +13,12 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(StationNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleStationNotFound(
+    public ResponseEntity<ErrorResponse<Object>> handleStationNotFound(
             StationNotFoundException exception
     ) {
-        var response = ApiResponse.error(
+        var response = ErrorResponse.create(
                 HttpStatus.NOT_FOUND.value(),
+                "STATION_NOT_FOUND",
                 exception.getMessage(),
                 null
         );
@@ -28,7 +29,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<List<ValidationError>>> handleValidation(
+    public ResponseEntity<ErrorResponse<List<ValidationError>>> handleValidation(
             MethodArgumentNotValidException exception
     ) {
         List<ValidationError> errors = exception.getBindingResult()
@@ -40,8 +41,9 @@ public class GlobalExceptionHandler {
                 ))
                 .toList();
 
-        var response = ApiResponse.error(
+        var response = ErrorResponse.create(
                 HttpStatus.BAD_REQUEST.value(),
+                "VALIDATION_ERROR",
                 "Validation failed",
                 errors
         );

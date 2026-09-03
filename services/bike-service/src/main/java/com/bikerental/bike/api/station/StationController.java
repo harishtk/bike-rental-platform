@@ -1,6 +1,6 @@
 package com.bikerental.bike.api.station;
 
-import com.bikerental.bike.api.common.ApiResponse;
+import com.bikerental.bike.api.common.ErrorResponse;
 import com.bikerental.bike.application.station.CreateStationCommand;
 import com.bikerental.bike.application.station.CreateStationUseCase;
 import com.bikerental.bike.application.station.GetStationUseCase;
@@ -31,7 +31,7 @@ public class StationController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<StationResponse> createStation(
+    public StationResponse createStation(
             @Valid @RequestBody CreateStationRequest request
     ) {
         CreateStationCommand command = new CreateStationCommand(
@@ -42,35 +42,22 @@ public class StationController {
 
         Station station = createStationUseCase.create(command);
 
-        return ApiResponse.success(
-                HttpStatus.CREATED.value(),
-                "Station created successfully",
-                stationResponseMapper.toResponse(station)
-        );
+        return stationResponseMapper.toResponse(station);
     }
 
     @GetMapping("/{stationId}")
-    public ApiResponse<StationResponse> getStation(
+    public StationResponse getStation(
             @PathVariable UUID stationId
     ) {
         Station station = getStationUseCase.getById(stationId);
 
-        return ApiResponse.success(
-                HttpStatus.OK.value(),
-                "Station retrieved successfully",
-                stationResponseMapper.toResponse(station)
-        );
+        return stationResponseMapper.toResponse(station);
     }
 
     @GetMapping
-    public ApiResponse<List<StationResponse>> getAllStations() {
-        var stations = listStationUseCase.getAll()
+    public List<StationResponse> getAllStations() {
+        return listStationUseCase.getAll()
                 .stream().map(stationResponseMapper::toResponse)
                 .toList();
-        return ApiResponse.success(
-                HttpStatus.OK.value(),
-                "Stations retrieved successfully",
-                stations
-        );
     }
 }
