@@ -5,7 +5,9 @@ import com.bikerental.bike.application.station.StationService;
 import com.bikerental.bike.domain.station.Station;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,9 +25,9 @@ public class StationController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public StationResponse createStation(
-            @Valid @RequestBody CreateStationRequest request
+    public ResponseEntity<StationResponse> createStation(
+            @Valid @RequestBody CreateStationRequest request,
+            UriComponentsBuilder uriBuilder
     ) {
         CreateStationCommand command = new CreateStationCommand(
                 request.name(),
@@ -35,22 +37,25 @@ public class StationController {
 
         Station station = stationService.create(command);
 
-        return stationResponseMapper.toResponse(station);
+        var location = uriBuilder.path("/api/v1/stations/{stationId}").buildAndExpand(station.getId()).toUri();
+        return ResponseEntity.created(location).body(stationResponseMapper.toResponse(station));
     }
 
     @GetMapping("/{stationId}")
-    public StationResponse getStation(
+    public ResponseEntity<StationResponse> getStation(
             @PathVariable UUID stationId
     ) {
         Station station = stationService.getById(stationId);
 
-        return stationResponseMapper.toResponse(station);
+        return ResponseEntity.ok(stationResponseMapper.toResponse(station));
     }
 
     @GetMapping
-    public List<StationResponse> getAllStations() {
-        return stationService.getAll()
-                .stream().map(stationResponseMapper::toResponse)
-                .toList();
+    public ResponseEntity<List<StationResponse>> getAllStations() {
+        return ResponseEntity.ok(
+                stationService.getAll()
+                        .stream().map(stationResponseMapper::toResponse)
+                        .toList()
+        );
     }
 }

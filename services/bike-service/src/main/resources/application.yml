@@ -16,8 +16,7 @@ spring:
 
 logging:
   level:
-    debug: org.springframework.web
-    trace: org.springframework.boot
+    root: INFO
 
 server:
   port: 8080

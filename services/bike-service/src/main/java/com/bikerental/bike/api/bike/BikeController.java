@@ -4,10 +4,13 @@ import com.bikerental.bike.application.bike.BikeService;
 import com.bikerental.bike.application.bike.CreateBikeCommand;
 import com.bikerental.bike.domain.bike.Bike;
 import jakarta.validation.Valid;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,9 +28,9 @@ public class BikeController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public BikeResponse create(
-            @Valid @RequestBody CreateBikeRequest request
+    public ResponseEntity<BikeResponse> create(
+            @Valid @RequestBody CreateBikeRequest request,
+            UriComponentsBuilder uriBuilder
     ) {
         Bike bike = bikeService.create(
                 new CreateBikeCommand(
@@ -37,20 +40,21 @@ public class BikeController {
                 )
         );
 
-        return mapper.toResponse(bike);
+        var location = uriBuilder.path("/api/v1/bikes/{bikeId}").buildAndExpand(bike.getId()).toUri();
+        return ResponseEntity.created(location).body(mapper.toResponse(bike));
     }
 
     @GetMapping("/{bikeId}")
-    public BikeResponse getBike(
+    public ResponseEntity<BikeResponse> getBike(
             @PathVariable UUID bikeId
     ) {
         Bike bike = bikeService.getById(bikeId);
 
-        return mapper.toResponse(bike);
+        return ResponseEntity.ok(mapper.toResponse(bike));
     }
 
     @GetMapping
-    public List<BikeResponse> getBikes(
+    public ResponseEntity<List<BikeResponse>> getBikes(
             @RequestParam(name = "stationId", required = false) UUID stationId,
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "page", required = false, defaultValue = "0") int page,
@@ -58,49 +62,46 @@ public class BikeController {
     ) {
         Pageable pageable = PageRequest.of(page, pageSize);
 
-        return bikeService.getAll(stationId, status, pageable)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+        return ResponseEntity.ok(
+                bikeService.getAll(stationId, status, pageable)
+                        .stream()
+                        .map(mapper::toResponse)
+                        .toList()
+        );
     }
 
     @PostMapping("/{bikeId}/reserve")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public BikeResponse reserveBike(
+    public ResponseEntity<BikeResponse> reserveBike(
             @PathVariable UUID bikeId
     ) {
-        return mapper.toResponse(bikeService.reserve(bikeId));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toResponse(bikeService.reserve(bikeId)));
     }
 
     @PostMapping("/{bikeId}/release")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public BikeResponse releaseBike(
+    public ResponseEntity<BikeResponse> releaseBike(
             @PathVariable UUID bikeId
     ) {
-        return mapper.toResponse(bikeService.release(bikeId));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toResponse(bikeService.release(bikeId)));
     }
 
     @PostMapping("/{bikeId}/maintenance")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public BikeResponse startMaintenance(
+    public ResponseEntity<BikeResponse> startMaintenance(
             @PathVariable UUID bikeId
     ) {
-        return mapper.toResponse(bikeService.startMaintenance(bikeId));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toResponse(bikeService.startMaintenance(bikeId)));
     }
 
     @PostMapping("/{bikeId}/maintenance/complete")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public BikeResponse completeMaintenance(
+    public ResponseEntity<BikeResponse> completeMaintenance(
             @PathVariable UUID bikeId
     ) {
-        return mapper.toResponse(bikeService.completeMaintenance(bikeId));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toResponse(bikeService.completeMaintenance(bikeId)));
     }
 
     @PostMapping("/{bikeId}/retire")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public BikeResponse retireBike(
+    public ResponseEntity<BikeResponse> retireBike(
             @PathVariable UUID bikeId
     ) {
-        return mapper.toResponse(bikeService.retire(bikeId));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toResponse(bikeService.retire(bikeId)));
     }
 }
