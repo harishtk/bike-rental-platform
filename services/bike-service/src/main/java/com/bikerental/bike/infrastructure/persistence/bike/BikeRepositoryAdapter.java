@@ -2,6 +2,7 @@ package com.bikerental.bike.infrastructure.persistence.bike;
 
 import com.bikerental.bike.application.bike.BikeRepository;
 import com.bikerental.bike.domain.bike.Bike;
+import com.bikerental.bike.domain.bike.BikeFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -46,13 +47,25 @@ public class BikeRepositoryAdapter implements BikeRepository {
     }
 
     @Override
-    public Page<Bike> findAll(Specification<BikeEntity> spec, Pageable pageable) {
-        return repository.findAll(spec, pageable)
+    public Page<Bike> findAll(BikeFilter filter, Pageable pageable) {
+        return repository.findAll(buildSpecFromFilter(filter), pageable)
                 .map(mapper::toDomain);
     }
 
     @Override
     public boolean existsBySerialNumber(String serialNumber) {
         return repository.existsBySerialNumber(serialNumber);
+    }
+
+    private Specification<BikeEntity> buildSpecFromFilter(BikeFilter filter) {
+        Specification<BikeEntity> spec = Specification.unrestricted();
+        if (filter.stationId() != null) {
+            spec = spec.and(BikeEntitySpecifications.hasStationId(filter.stationId()));
+        }
+        if (filter.bikeStatus() != null) {
+            spec = spec.and(BikeEntitySpecifications.hasStatus(filter.bikeStatus()));
+        }
+
+        return spec;
     }
 }

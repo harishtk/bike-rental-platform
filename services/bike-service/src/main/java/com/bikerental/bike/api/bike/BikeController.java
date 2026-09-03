@@ -4,12 +4,17 @@ import com.bikerental.bike.api.common.PagedResponse;
 import com.bikerental.bike.application.bike.BikeService;
 import com.bikerental.bike.application.bike.CreateBikeCommand;
 import com.bikerental.bike.domain.bike.Bike;
+import com.bikerental.bike.domain.bike.BikeFilter;
+import com.bikerental.bike.domain.bike.BikeStatus;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.UUID;
@@ -56,12 +61,11 @@ public class BikeController {
     public ResponseEntity<PagedResponse<BikeResponse>> getBikes(
             @RequestParam(name = "stationId", required = false) UUID stationId,
             @RequestParam(name = "status", required = false) String status,
-            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(name = "size", required = false, defaultValue = "10") int pageSize
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Pageable pageable = PageRequest.of(page, pageSize);
-
-        var pagedResponse = PagedResponse.of(bikeService.getAll(stationId, status, pageable)
+        BikeStatus statusEnum = parseBikeStatus(status);
+        BikeFilter filter = new BikeFilter(stationId, statusEnum, pageable);
+        var pagedResponse   = PagedResponse.of(bikeService.getAll(filter, pageable)
                 .map(mapper::toResponse));
         return ResponseEntity.ok(pagedResponse);
     }
@@ -99,5 +103,16 @@ public class BikeController {
             @PathVariable UUID bikeId
     ) {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(mapper.toResponse(bikeService.retire(bikeId)));
+    }
+
+    private BikeStatus parseBikeStatus(String status) {
+        try {
+            if (status != null) {
+                return BikeStatus.valueOf(status.toUpperCase());
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid status");
+        }
+        return null;
     }
 }

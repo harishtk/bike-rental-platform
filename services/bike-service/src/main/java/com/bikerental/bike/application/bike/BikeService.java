@@ -1,6 +1,8 @@
 package com.bikerental.bike.application.bike;
 
 import com.bikerental.bike.domain.bike.Bike;
+import com.bikerental.bike.domain.bike.BikeFilter;
+import com.bikerental.bike.domain.bike.BikeStatus;
 import com.bikerental.bike.infrastructure.persistence.bike.BikeEntity;
 import com.bikerental.bike.infrastructure.persistence.bike.BikeEntitySpecifications;
 import org.springframework.data.domain.Page;
@@ -48,15 +50,8 @@ public class BikeService {
         return bikeRepository.findAll();
     }
 
-    public Page<Bike> getAll(UUID stationId, String status, Pageable pageable) {
-        Specification<BikeEntity> spec = Specification.anyOf();
-        if (stationId != null) {
-            spec = spec.and(BikeEntitySpecifications.hasStationId(stationId));
-        }
-        if (status != null) {
-            spec = spec.and(BikeEntitySpecifications.hasStatus(status));
-        }
-        return bikeRepository.findAll(spec, pageable);
+    public Page<Bike> getAll(BikeFilter filter, Pageable pageable) {
+        return bikeRepository.findAll(filter, pageable);
     }
 
     @Transactional

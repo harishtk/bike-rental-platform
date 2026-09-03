@@ -1,5 +1,6 @@
 package com.bikerental.bike.infrastructure.persistence.bike;
 
+import com.bikerental.bike.domain.bike.BikeStatus;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
@@ -11,7 +12,7 @@ public class BikeEntitySpecifications {
                 criteriaBuilder.equal(root.get("stationId"), stationId);
     }
 
-    public static Specification<BikeEntity> hasStatus(String status) {
+    public static Specification<BikeEntity> hasStatus(BikeStatus status) {
         return ((root, query, criteriaBuilder) ->
                 criteriaBuilder.equal(root.get("status"), status));
     }
