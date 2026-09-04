@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 rootProject.name = 'bike-rental-platform'
 
 include("services:bike-service")
+include("services:reservation-service")

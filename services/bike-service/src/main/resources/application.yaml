@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: bike-service
   datasource:
     url: jdbc:postgresql://localhost:5432/bikedb
     username: admin
