@@ -20,6 +20,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
+    implementation(platform("org.springframework.cloud:spring-cloud-dependencies:2025.0.3"))
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+
     implementation("org.mapstruct:mapstruct:1.6.3")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
 

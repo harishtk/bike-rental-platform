@@ -1,18 +1,31 @@
 package com.bikerental.reservation.integration.reservation;
 
+import com.bikerental.reservation.application.bike.BikeReservationDetails;
+import com.bikerental.reservation.application.bike.BikeReservationGateway;
+import com.bikerental.reservation.domain.reservation.Reservation;
+import com.bikerental.reservation.infrastructure.client.bike.BikeFeignClient;
 import com.bikerental.reservation.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.shaded.org.apache.commons.lang3.time.DateUtils;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.Volume;
 
 import java.util.UUID;
 
 import static com.jayway.jsonpath.JsonPath.read;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -29,16 +42,20 @@ public class ReservationControllerIntegrationTest extends
     @Autowired
     private MockMvc mockMvc;
 
+    @MockitoBean
+    private BikeReservationGateway bikeReservationGateway;
+
     @Test
-    void shouldCreateStation() throws Exception {
+    void shouldCreateReservation() throws Exception {
+        UUID bikeId = prepareBikeReservationMock();
+
         String request = """
                 {
                     "userId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24",
-                    "bikeId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc23",
-                    "stationId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc25",
+                    "bikeId": "%s",
                     "durationHours": 48
                 }
-                """;
+                """.formatted(bikeId);
 
         mockMvc.perform(
                         post("/api/v1/reservations")
@@ -55,14 +72,14 @@ public class ReservationControllerIntegrationTest extends
 
     @Test
     void shouldGetReservationById() throws Exception {
+        UUID bikeId = prepareBikeReservationMock();
         String request = """
                 {
                     "userId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24",
-                    "bikeId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc23",
-                    "stationId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc25",
+                    "bikeId": "%s",
                     "durationHours": 48
                 }
-                """;
+                """.formatted(bikeId);
 
         String response = mockMvc.perform(
                         post("/api/v1/reservations")
@@ -96,18 +113,17 @@ public class ReservationControllerIntegrationTest extends
 
     @Test
     void shouldGetAllReservations() throws Exception {
-        UUID stationId = UUID.randomUUID();
+        when(bikeReservationGateway.reserveBike(ArgumentMatchers.any(UUID.class)))
+            .thenReturn(new BikeReservationDetails(UUID.randomUUID(), UUID.randomUUID()));
 
         String id1 = createReservation(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                stationId,
                 48
         );
         String id2 = createReservation(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                stationId,
                 36
         );
 
@@ -126,7 +142,6 @@ public class ReservationControllerIntegrationTest extends
                 {
                     "userId": "",
                     "bikeId": "",
-                    "stationId": "",
                     "durationHours": 0
                 }
                 """;
@@ -142,28 +157,47 @@ public class ReservationControllerIntegrationTest extends
                 ))
                 .andExpect(jsonPath(
                         "$.data",
-                        hasSize(4)
+                        hasSize(3)
                 ));
 
+    }
+
+    @Test
+    void shouldCancelAValidReservation() throws Exception {
+        UUID bikeId = prepareBikeReservationMock();
+
+        doNothing().when(bikeReservationGateway).releaseBike(bikeId);
+
+        String reservationId = createReservation(
+                UUID.randomUUID(),
+                bikeId,
+                48
+        );
+
+        mockMvc.perform(
+                post("/api/v1/reservations/{reservationId}/cancel", reservationId)
+        )
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath(
+                        "$.status",
+                        is("CANCELLED")
+                ));
     }
 
     private String createReservation(
             UUID userId,
             UUID bikeId,
-            UUID stationId,
             int durationHours
     ) throws Exception {
         String request = """
                 {
                     "userId": "%s",
                     "bikeId": "%s",
-                    "stationId": "%s",
                     "durationHours": %d
                 }
                 """.formatted(
                 userId,
                 bikeId,
-                stationId,
                 durationHours
         );
 
@@ -179,5 +213,18 @@ public class ReservationControllerIntegrationTest extends
                 .getContentAsString();
 
         return read(response, "$.id");
+    }
+
+    private UUID prepareBikeReservationMock() {
+        UUID bikeId = UUID.randomUUID();
+        BikeReservationDetails mockBikeReservationDetails =
+                new BikeReservationDetails(
+                        bikeId,
+                        UUID.randomUUID()
+                );
+
+        when(bikeReservationGateway.reserveBike(bikeId))
+                .thenReturn(mockBikeReservationDetails);
+        return bikeId;
     }
 }

@@ -1,5 +1,5 @@
 services:
-  db:
+  bike-db:
     image: postgres:17
     container_name: postgres-bikedb
     restart: always
@@ -12,6 +12,19 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+  rental-db:
+    image: postgres:17
+    container_name: postgres-rentaldb
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: nopass
+      POSTGRES_DB: rentaldb
+      TZ: Asia/Kolkata
+    ports:
+      - "5431:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
@@ -21,7 +34,7 @@ services:
     ports:
       - "5050:80"
     depends_on:
-      - db
+      - bike-db
 volumes:
   pgdata:
 

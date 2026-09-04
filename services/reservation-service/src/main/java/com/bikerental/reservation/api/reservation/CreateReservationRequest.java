@@ -13,9 +13,6 @@ public record CreateReservationRequest(
         @NotNull
         UUID bikeId,
 
-        @NotNull
-        UUID stationId,
-
         @Positive
         long durationHours
 ) {

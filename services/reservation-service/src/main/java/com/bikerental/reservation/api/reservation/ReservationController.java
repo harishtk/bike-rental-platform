@@ -44,7 +44,6 @@ public class ReservationController {
                 reservationService.createReservation(
                         request.userId(),
                         request.bikeId(),
-                        request.stationId(),
                         Duration.ofHours(request.durationHours())
                 );
 

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 
 @ActiveProfiles("test")
 @Sql(
@@ -87,4 +88,23 @@ public class ReservationRepositoryIntegrationTest extends
                 .hasSize(2);
     }
 
+    @Test
+    void shouldCancelReservation() {
+        Reservation reservation = reservationRepository.save(
+                Reservation.create(
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        Duration.ofDays(3)
+                )
+        );
+
+        assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
+
+        reservation.cancel();
+
+        Reservation cancelled = reservationRepository.save(reservation);
+
+        assertThat(cancelled.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+    }
 }

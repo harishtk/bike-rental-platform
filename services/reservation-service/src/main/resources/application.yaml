@@ -2,7 +2,7 @@ spring:
   application:
     name: reservation-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/bikedb
+    url: jdbc:postgresql://localhost:5431/rentaldb
     username: admin
     password: nopass
     driver-class-name: org.postgresql.Driver
@@ -19,6 +19,10 @@ spring:
 logging:
   level:
     root: INFO
+
+clients:
+  bike-service:
+    url: ${BIKE_SERVICE_URL:http://localhost:8080}
 
 server:
   port: 8081

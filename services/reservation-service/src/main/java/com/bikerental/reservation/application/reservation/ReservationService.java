@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.bikerental.reservation.application.bike.BikeReservationDetails;
+import com.bikerental.reservation.application.bike.BikeReservationGateway;
 import com.bikerental.reservation.infrastructure.persistence.reservation.ReservationEntityMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,18 +19,19 @@ import com.bikerental.reservation.domain.reservation.ReservationStatus;
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
+    private final BikeReservationGateway bikeReservationGateway;
 
     public ReservationService(
-            ReservationRepository reservationRepository, ReservationEntityMapper mapper
+            ReservationRepository reservationRepository, ReservationEntityMapper mapper, BikeReservationGateway bikeReservationGateway
     ) {
         this.reservationRepository = reservationRepository;
+        this.bikeReservationGateway = bikeReservationGateway;
     }
 
     @Transactional
     public Reservation createReservation(
             UUID userId,
             UUID bikeId,
-            UUID stationId,
             Duration duration
     ) {
         boolean hasActiveReservation =
@@ -43,15 +46,23 @@ public class ReservationService {
             );
         }
 
-        Reservation reservation =
-                Reservation.create(
-                        userId,
-                        bikeId,
-                        stationId,
-                        duration
-                );
+        BikeReservationDetails bikeDetails =
+                bikeReservationGateway.reserveBike(bikeId);
 
-        return reservationRepository.save(reservation);
+        try {
+            Reservation reservation =
+                    Reservation.create(
+                            userId,
+                            bikeId,
+                            bikeDetails.stationId(),
+                            duration
+                    );
+
+            return reservationRepository.save(reservation);
+        } catch (RuntimeException e) {
+            bikeReservationGateway.releaseBike(bikeId);
+            throw e;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +83,8 @@ public class ReservationService {
     public Reservation cancelReservation(UUID reservationId) {
 
         Reservation reservation = getReservation(reservationId);
+
+        bikeReservationGateway.releaseBike(reservation.getBikeId());
 
         reservation.cancel();
 
