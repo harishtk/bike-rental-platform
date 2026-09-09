@@ -81,7 +81,7 @@ public class ReservationService {
 
         bikeReservationGateway.releaseBike(reservation.getBikeId());
 
-        reservation.cancel();
+        reservation.cancel(Instant.now());
 
         return reservationRepository.save(reservation);
     }

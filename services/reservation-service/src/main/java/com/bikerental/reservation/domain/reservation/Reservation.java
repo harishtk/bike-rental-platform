@@ -87,38 +87,38 @@ public class Reservation {
         );
     }
 
-    public void cancel() {
+    public void cancel(Instant currentTime) {
         ensureActive();
 
         this.status = ReservationStatus.CANCELLED;
-        this.cancelledAt = Instant.now();
+        this.cancelledAt = currentTime;
         touch();
     }
 
-    public void expire() {
+    public void expire(Instant currentTime) {
         ensureActive();
 
-        if (Instant.now().isBefore(expiresAt)) {
+        if (currentTime.isBefore(expiresAt)) {
             throw new InvalidReservationStateException(
                     "Reservation has not expired yet"
             );
         }
 
         this.status = ReservationStatus.EXPIRED;
-        touch();
+        this.updatedAt = currentTime;
     }
 
-    public void consume() {
+    public void consume(Instant currentTime) {
         ensureActive();
 
-        if (Instant.now().isAfter(expiresAt)) {
+        if (currentTime.isAfter(expiresAt)) {
             throw new InvalidReservationStateException(
                     "Reservation has already expired"
             );
         }
 
         this.status = ReservationStatus.CONSUMED;
-        touch();
+        this.updatedAt = currentTime;
     }
 
     public boolean isExpired() {

@@ -1,0 +1,47 @@
+package com.bikerental.reservation.application.reservation;
+
+import com.bikerental.reservation.application.bike.BikeReservationGateway;
+import com.bikerental.reservation.domain.reservation.Reservation;
+import com.bikerental.reservation.domain.reservation.ReservationRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+
+@Slf4j
+@RequiredArgsConstructor
+@Service
+public class ReservationExpirationService {
+
+    private final ReservationRepository reservationRepository;
+    private final BikeReservationGateway bikeReservationGateway;
+    private final Clock clock;
+
+    @Transactional
+    public void expireReservations() {
+        Instant now = Instant.now(clock);
+
+        List<Reservation> expiredReservations = reservationRepository
+                .findExpiredActiveReservations(now);
+
+        for (Reservation reservation : expiredReservations) {
+            try {
+                expireReservation(reservation, now);
+            } catch (RuntimeException e) {
+                log.error("e: ", e);
+            }
+        }
+    }
+
+    private void expireReservation(Reservation reservation, Instant currentTime) {
+        bikeReservationGateway.releaseBike(reservation.getBikeId());
+
+        reservation.expire(currentTime);
+
+        reservationRepository.save(reservation);
+    }
+}

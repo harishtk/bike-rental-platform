@@ -10,6 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -101,7 +102,7 @@ public class ReservationRepositoryIntegrationTest extends
 
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
 
-        reservation.cancel();
+        reservation.cancel(Instant.now());
 
         Reservation cancelled = reservationRepository.save(reservation);
 

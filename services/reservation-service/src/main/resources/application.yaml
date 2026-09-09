@@ -24,5 +24,9 @@ clients:
   bike-service:
     url: ${BIKE_SERVICE_URL:http://localhost:8080}
 
+reservation:
+  expiration:
+    fixed-delay: 5000
+
 server:
   port: 8081
