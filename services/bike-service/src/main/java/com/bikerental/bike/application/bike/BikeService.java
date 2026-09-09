@@ -2,27 +2,21 @@ package com.bikerental.bike.application.bike;
 
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeFilter;
-import com.bikerental.bike.domain.bike.BikeStatus;
-import com.bikerental.bike.infrastructure.persistence.bike.BikeEntity;
-import com.bikerental.bike.infrastructure.persistence.bike.BikeEntitySpecifications;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @Service
 @Transactional
 public class BikeService {
 
     private final BikeRepository bikeRepository;
-
-    public BikeService(BikeRepository bikeRepository) {
-        this.bikeRepository = bikeRepository;
-    }
 
     public Bike create(CreateBikeCommand command) {
 

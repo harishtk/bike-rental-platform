@@ -1,8 +1,11 @@
 package com.bikerental.bike.domain.bike;
 
+import lombok.*;
+
 import java.time.Instant;
 import java.util.UUID;
 
+@Data
 public class Bike {
 
     private final UUID id;
@@ -171,47 +174,4 @@ public class Bike {
         updatedAt = Instant.now();
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public String getSerialNumber() {
-        return serialNumber;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public BikeStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(BikeStatus status) {
-        this.status = status;
-    }
-
-    public UUID getStationId() {
-        return stationId;
-    }
-
-    public void setStationId(UUID stationId) {
-        this.stationId = stationId;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public long getVersion() {
-        return version;
-    }
 }

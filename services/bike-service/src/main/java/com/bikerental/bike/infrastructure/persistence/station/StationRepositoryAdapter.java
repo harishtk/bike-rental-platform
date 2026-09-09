@@ -2,25 +2,19 @@ package com.bikerental.bike.infrastructure.persistence.station;
 
 import com.bikerental.bike.domain.station.Station;
 import com.bikerental.bike.domain.station.StationRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @Component
 public class StationRepositoryAdapter implements StationRepository {
 
     private final SpringDataStationRepository repository;
     private final StationMapper mapper;
-
-    public StationRepositoryAdapter(
-            SpringDataStationRepository repository,
-            StationMapper mapper
-    ) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
 
     @Override
     public Station save(Station station) {

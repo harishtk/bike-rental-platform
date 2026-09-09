@@ -4,7 +4,7 @@ import com.bikerental.bike.application.station.CreateStationCommand;
 import com.bikerental.bike.application.station.StationService;
 import com.bikerental.bike.domain.station.Station;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -12,17 +12,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/stations")
 public class StationController {
 
     private final StationService stationService;
     private final StationResponseMapper stationResponseMapper;
-
-    public StationController(StationService stationService, StationResponseMapper stationResponseMapper) {
-        this.stationService = stationService;
-        this.stationResponseMapper = stationResponseMapper;
-    }
 
     @PostMapping
     public ResponseEntity<StationResponse> createStation(

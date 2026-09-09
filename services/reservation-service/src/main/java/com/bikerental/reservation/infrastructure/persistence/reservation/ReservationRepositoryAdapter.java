@@ -5,26 +5,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.bikerental.reservation.domain.reservation.Reservation;
 import com.bikerental.reservation.domain.reservation.ReservationRepository;
 import com.bikerental.reservation.domain.reservation.ReservationStatus;
 
+@RequiredArgsConstructor
 @Repository
 public class ReservationRepositoryAdapter
         implements ReservationRepository {
 
     private final SpringDataReservationRepository repository;
     private final ReservationEntityMapper mapper;
-
-    public ReservationRepositoryAdapter(
-            SpringDataReservationRepository repository,
-            ReservationEntityMapper mapper
-    ) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
 
     @Override
     public Reservation save(Reservation reservation) {

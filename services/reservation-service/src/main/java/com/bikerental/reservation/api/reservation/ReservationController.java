@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,20 +19,13 @@ import com.bikerental.reservation.application.reservation.ReservationService;
 import com.bikerental.reservation.domain.reservation.Reservation;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/reservations")
 public class ReservationController {
 
     private final ReservationService reservationService;
     private final ReservationApiMapper mapper;
-
-    public ReservationController(
-            ReservationService reservationService,
-            ReservationApiMapper mapper
-    ) {
-        this.reservationService = reservationService;
-        this.mapper = mapper;
-    }
 
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(

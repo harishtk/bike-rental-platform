@@ -7,7 +7,7 @@ import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeFilter;
 import com.bikerental.bike.domain.bike.BikeStatus;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.PageRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -19,17 +19,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/bikes")
 public class BikeController {
 
     private final BikeService bikeService;
     private final BikeResponseMapper mapper;
-
-    public BikeController(BikeService bikeService, BikeResponseMapper mapper) {
-        this.bikeService = bikeService;
-        this.mapper = mapper;
-    }
 
     @PostMapping
     public ResponseEntity<BikeResponse> create(

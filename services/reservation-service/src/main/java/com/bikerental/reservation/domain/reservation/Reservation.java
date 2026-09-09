@@ -1,9 +1,14 @@
 package com.bikerental.reservation.domain.reservation;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+@Data
+@AllArgsConstructor
 public class Reservation {
 
     private static final Duration MAX_RESERVATION_DURATION =
@@ -19,19 +24,6 @@ public class Reservation {
     private Instant cancelledAt;
     private Instant createdAt;
     private Instant updatedAt;
-
-    public Reservation(UUID id, UUID userId, UUID bikeId, UUID stationId, Instant reservedAt, Instant expiresAt, ReservationStatus status, Instant cancelledAt, Instant createdAt, Instant updatedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.bikeId = bikeId;
-        this.stationId = stationId;
-        this.reservedAt = reservedAt;
-        this.expiresAt = expiresAt;
-        this.status = status;
-        this.cancelledAt = cancelledAt;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
 
     public static Reservation create(
             UUID userId,
@@ -101,62 +93,6 @@ public class Reservation {
         this.status = ReservationStatus.CANCELLED;
         this.cancelledAt = Instant.now();
         touch();
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public UUID getBikeId() {
-        return bikeId;
-    }
-
-    public UUID getStationId() {
-        return stationId;
-    }
-
-    public Instant getReservedAt() {
-        return reservedAt;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
-
-    public ReservationStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ReservationStatus status) {
-        this.status = status;
-    }
-
-    public Instant getCancelledAt() {
-        return cancelledAt;
-    }
-
-    public void setCancelledAt(Instant cancelledAt) {
-        this.cancelledAt = cancelledAt;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public void expire() {

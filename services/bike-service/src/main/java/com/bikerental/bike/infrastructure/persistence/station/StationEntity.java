@@ -2,10 +2,18 @@ package com.bikerental.bike.infrastructure.persistence.station;
 
 import com.bikerental.bike.domain.station.StationStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@Setter
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "stations")
 public class StationEntity {
@@ -32,81 +40,4 @@ public class StationEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected StationEntity() {
-        // Required by JPA
-    }
-
-    public StationEntity(
-            UUID id,
-            String name,
-            String address,
-            int capacity,
-            StationStatus status,
-            Instant createdAt,
-            Instant updatedAt
-    ) {
-        this.id = id;
-        this.name = name;
-        this.address = address;
-        this.capacity = capacity;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
-    }
-
-    public StationStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(StationStatus status) {
-        this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 }

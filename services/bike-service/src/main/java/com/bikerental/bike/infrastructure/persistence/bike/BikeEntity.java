@@ -2,10 +2,18 @@ package com.bikerental.bike.infrastructure.persistence.bike;
 
 import com.bikerental.bike.domain.bike.BikeStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@Setter
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(
         name = "bikes",
@@ -44,82 +52,4 @@ public class BikeEntity {
     @Column(nullable = false)
     private long version;
 
-    protected BikeEntity() {
-        // JPA
-    }
-
-    public BikeEntity(UUID id, String serialNumber, String type, BikeStatus status, UUID stationId, Instant createdAt, Instant updatedAt, long version) {
-        this.id = id;
-        this.serialNumber = serialNumber;
-        this.type = type;
-        this.status = status;
-        this.stationId = stationId;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.version = version;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getSerialNumber() {
-        return serialNumber;
-    }
-
-    public void setSerialNumber(String serialNumber) {
-        this.serialNumber = serialNumber;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public BikeStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(BikeStatus status) {
-        this.status = status;
-    }
-
-    public UUID getStationId() {
-        return stationId;
-    }
-
-    public void setStationId(UUID stationId) {
-        this.stationId = stationId;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public long getVersion() {
-        return version;
-    }
-
-    public void setVersion(long version) {
-        this.version = version;
-    }
 }

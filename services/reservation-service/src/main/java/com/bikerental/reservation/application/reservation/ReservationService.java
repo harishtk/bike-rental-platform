@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
 import com.bikerental.reservation.infrastructure.persistence.reservation.ReservationEntityMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,18 +16,12 @@ import com.bikerental.reservation.domain.reservation.Reservation;
 import com.bikerental.reservation.domain.reservation.ReservationRepository;
 import com.bikerental.reservation.domain.reservation.ReservationStatus;
 
+@RequiredArgsConstructor
 @Service
 public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final BikeReservationGateway bikeReservationGateway;
-
-    public ReservationService(
-            ReservationRepository reservationRepository, ReservationEntityMapper mapper, BikeReservationGateway bikeReservationGateway
-    ) {
-        this.reservationRepository = reservationRepository;
-        this.bikeReservationGateway = bikeReservationGateway;
-    }
 
     @Transactional
     public Reservation createReservation(

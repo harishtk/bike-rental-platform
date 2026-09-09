@@ -3,6 +3,7 @@ package com.bikerental.bike.infrastructure.persistence.bike;
 import com.bikerental.bike.application.bike.BikeRepository;
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,16 +13,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @Component
 public class BikeRepositoryAdapter implements BikeRepository {
 
     private final SpringDataBikeRepository repository;
     private final BikeMapper mapper;
-
-    public BikeRepositoryAdapter(SpringDataBikeRepository repository, BikeMapper mapper) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
 
     @Override
     public Bike save(Bike bike) {
