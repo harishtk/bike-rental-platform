@@ -9,6 +9,8 @@ public interface ReservationRepository {
 
     Reservation save(Reservation reservation);
 
+    void flush();
+
     Optional<Reservation> findById(UUID reservationId);
 
     boolean existsByUserIdAndStatus(

@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.bikerental.reservation.application.reservation.ActiveReservationAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import com.bikerental.reservation.domain.reservation.Reservation;
@@ -26,10 +28,21 @@ public class ReservationRepositoryAdapter
         ReservationEntity entity =
                 mapper.toEntity(reservation);
 
-        ReservationEntity savedEntity =
-                repository.save(entity);
+        try {
+            ReservationEntity savedEntity =
+                    repository.save(entity);
 
-        return mapper.toDomain(savedEntity);
+            return mapper.toDomain(savedEntity);
+        } catch (DataIntegrityViolationException e) {
+            throw new ActiveReservationAlreadyExistsException(
+                    "Active reservation already exists for user or bike"
+            );
+        }
+    }
+
+    @Override
+    public void flush() {
+        repository.flush();
     }
 
     @Override

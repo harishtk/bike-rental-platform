@@ -184,6 +184,33 @@ public class ReservationControllerIntegrationTest extends
                 ));
     }
 
+    @Test
+    void shouldNotAllowTwoReservationsForSameUser() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID bikeA = prepareBikeReservationMock();
+        UUID bikeB = prepareBikeReservationMock();
+
+        createReservation(userId, bikeA, 12);
+        String request = """
+                {
+                    "userId": "%s",
+                    "bikeId": "%s",
+                    "durationHours": %d
+                }
+                """.formatted(
+                userId,
+                bikeB,
+                12
+        );
+
+        mockMvc.perform(
+                post("/api/v1/reservations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request)
+        )
+                .andExpect(status().isConflict());
+    }
+
     private String createReservation(
             UUID userId,
             UUID bikeId,

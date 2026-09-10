@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
-import com.bikerental.reservation.infrastructure.persistence.reservation.ReservationEntityMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,9 +35,7 @@ public class ReservationService {
                 );
 
         if (hasActiveReservation) {
-            throw new ActiveReservationAlreadyExistsException(
-                    userId
-            );
+            throw new ActiveReservationAlreadyExistsException(userId);
         }
 
         BikeReservationDetails bikeDetails =
@@ -53,7 +50,9 @@ public class ReservationService {
                             duration
                     );
 
-            return reservationRepository.save(reservation);
+            Reservation savedReservation = reservationRepository.save(reservation);
+            reservationRepository.flush();
+            return savedReservation;
         } catch (RuntimeException e) {
             bikeReservationGateway.releaseBike(bikeId);
             throw e;
