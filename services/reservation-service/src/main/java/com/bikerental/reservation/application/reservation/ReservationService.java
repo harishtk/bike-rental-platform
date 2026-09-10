@@ -7,6 +7,11 @@ import java.util.UUID;
 
 import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
+import com.bikerental.reservation.application.outbox.EventPayloadSerializer;
+import com.bikerental.reservation.application.reservation.event.ReservationCreatedEvent;
+import com.bikerental.reservation.application.reservation.event.ReservationEventTypes;
+import com.bikerental.reservation.domain.outbox.OutboxEvent;
+import com.bikerental.reservation.domain.outbox.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +26,9 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final BikeReservationGateway bikeReservationGateway;
+
+    private final OutboxEventRepository outboxEventRepository;
+    private final EventPayloadSerializer eventPayloadSerializer;
 
     @Transactional
     public Reservation createReservation(
@@ -52,6 +60,28 @@ public class ReservationService {
 
             Reservation savedReservation = reservationRepository.save(reservation);
             reservationRepository.flush();
+
+            ReservationCreatedEvent event =
+                    new ReservationCreatedEvent(
+                            savedReservation.getId(),
+                            savedReservation.getUserId(),
+                            savedReservation.getBikeId(),
+                            savedReservation.getStationId(),
+                            savedReservation.getReservedAt(),
+                            savedReservation.getExpiresAt()
+                    );
+            String payload = eventPayloadSerializer.serialize(event);
+
+            OutboxEvent outboxEvent =
+                    OutboxEvent.create(
+                            ReservationEventTypes.AGGREGATE_TYPE,
+                            savedReservation.getId(),
+                            ReservationEventTypes.CREATED,
+                            payload,
+                            savedReservation.getReservedAt()
+                    );
+            outboxEventRepository.save(outboxEvent);
+
             return savedReservation;
         } catch (RuntimeException e) {
             bikeReservationGateway.releaseBike(bikeId);
