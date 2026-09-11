@@ -1,6 +1,9 @@
 package com.bikerental.reservation.application.reservation;
 
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
+import com.bikerental.reservation.application.outbox.EventPayloadSerializer;
+import com.bikerental.reservation.application.reservation.event.ReservationOutboxEventFactory;
+import com.bikerental.reservation.domain.outbox.OutboxEventRepository;
 import com.bikerental.reservation.domain.reservation.Reservation;
 import com.bikerental.reservation.domain.reservation.ReservationRepository;
 import com.bikerental.reservation.domain.reservation.ReservationStatus;
@@ -32,6 +35,11 @@ class ReservationExpirationServiceTest {
     private ReservationRepository reservationRepository;
     @Mock
     private BikeReservationGateway bikeReservationGateway;
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+    @Mock
+    private EventPayloadSerializer eventPayloadSerializer;
+    private ReservationOutboxEventFactory reservationOutboxEventFactory;
     @MockitoBean
     private Clock clock;
 
@@ -49,6 +57,7 @@ class ReservationExpirationServiceTest {
     @BeforeEach
     public void setUp() {
         clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        reservationOutboxEventFactory = new ReservationOutboxEventFactory(eventPayloadSerializer);
         reservationId = UUID.randomUUID();
         userId = UUID.randomUUID();
         bikeId = UUID.randomUUID();
@@ -57,7 +66,9 @@ class ReservationExpirationServiceTest {
         expirationService = new ReservationExpirationService(
                 reservationRepository,
                 bikeReservationGateway,
-                clock
+                clock,
+                outboxEventRepository,
+                reservationOutboxEventFactory
         );
 
         reservedAt = Instant.parse("2026-01-01T10:00:00Z");
@@ -75,7 +86,7 @@ class ReservationExpirationServiceTest {
 
         expirationService.expireReservations();
 
-        verify(bikeReservationGateway).releaseBike(bikeId);
+        verify(bikeReservationGateway).releaseBike(eq(bikeId), any(UUID.class));
         verify(reservationRepository).save(reservation);
 
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.EXPIRED);
@@ -117,8 +128,8 @@ class ReservationExpirationServiceTest {
 
         expirationService.expireReservations();
 
-        verify(bikeReservationGateway).releaseBike(bikeId);
-        verify(bikeReservationGateway).releaseBike(secondBikeId);
+        verify(bikeReservationGateway).releaseBike(eq(bikeId), any(UUID.class));
+        verify(bikeReservationGateway).releaseBike(eq(secondBikeId), any(UUID.class));
 
         verify(reservationRepository).save(firstReservation);
         verify(reservationRepository).save(secondReservation);
@@ -134,11 +145,11 @@ class ReservationExpirationServiceTest {
                 .thenReturn(List.of(reservation));
         doThrow(new RuntimeException("Bike service unavailable"))
                 .when(bikeReservationGateway)
-                .releaseBike(bikeId);
+                .releaseBike(eq(bikeId), any(UUID.class));
 
         assertDoesNotThrow(() -> expirationService.expireReservations());
 
-        verify(bikeReservationGateway).releaseBike(bikeId);
+        verify(bikeReservationGateway).releaseBike(eq(bikeId), any(UUID.class));
         verify(reservationRepository, never()).save(reservation);
 
         assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
@@ -166,12 +177,12 @@ class ReservationExpirationServiceTest {
                 .thenReturn(List.of(firstReservation, secondReservation));
         doThrow(new RuntimeException("Bike service unavailable"))
                 .when(bikeReservationGateway)
-                .releaseBike(bikeId);
+                .releaseBike(eq(bikeId), any(UUID.class));
 
         assertDoesNotThrow(() -> expirationService.expireReservations());
 
-        verify(bikeReservationGateway).releaseBike(bikeId);
-        verify(bikeReservationGateway).releaseBike(secondBikeId);
+        verify(bikeReservationGateway).releaseBike(eq(bikeId), any(UUID.class));
+        verify(bikeReservationGateway).releaseBike(eq(secondBikeId), any(UUID.class));
 
         verify(reservationRepository).save(secondReservation);
         verify(reservationRepository, never()).save(firstReservation);

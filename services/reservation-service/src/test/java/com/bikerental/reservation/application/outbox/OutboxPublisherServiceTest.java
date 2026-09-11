@@ -4,6 +4,7 @@ import com.bikerental.reservation.application.reservation.event.ReservationEvent
 import com.bikerental.reservation.domain.outbox.OutboxEvent;
 import com.bikerental.reservation.domain.outbox.OutboxEventRepository;
 import com.bikerental.reservation.infrastructure.messaging.kafka.KafkaEventPublicationException;
+import com.bikerental.reservation.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -18,7 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-class OutboxPublisherServiceTest {
+class OutboxPublisherServiceTest
+        extends AbstractPostgresIntegrationTest {
 
     @Mock
     private OutboxEventRepository outboxEventRepository;

@@ -1,11 +1,7 @@
-package com.bikerental.bike.application.bike;
+package com.bikerental.bike.domain.bike;
 
-import com.bikerental.bike.domain.bike.Bike;
-import com.bikerental.bike.domain.bike.BikeFilter;
-import com.bikerental.bike.infrastructure.persistence.bike.BikeEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +12,8 @@ public interface BikeRepository {
     Bike save(Bike bike);
 
     Optional<Bike> findById(UUID bikeId);
+
+    Optional<Bike> findByIdForUpdate(UUID bikeId);
 
     List<Bike> findAll();
 

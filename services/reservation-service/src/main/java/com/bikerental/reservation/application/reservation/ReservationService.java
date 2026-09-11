@@ -1,5 +1,6 @@
 package com.bikerental.reservation.application.reservation;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -11,6 +12,7 @@ import com.bikerental.reservation.application.messaging.EventEnvelope;
 import com.bikerental.reservation.application.outbox.EventPayloadSerializer;
 import com.bikerental.reservation.application.reservation.event.ReservationCreatedEvent;
 import com.bikerental.reservation.application.reservation.event.ReservationEventTypes;
+import com.bikerental.reservation.application.reservation.event.ReservationOutboxEventFactory;
 import com.bikerental.reservation.domain.outbox.OutboxEvent;
 import com.bikerental.reservation.domain.outbox.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +31,9 @@ public class ReservationService {
     private final BikeReservationGateway bikeReservationGateway;
 
     private final OutboxEventRepository outboxEventRepository;
-    private final EventPayloadSerializer eventPayloadSerializer;
+    private final ReservationOutboxEventFactory reservationOutboxEventFactory;
+
+    private final Clock clock;
 
     @Transactional
     public Reservation createReservation(
@@ -47,8 +51,13 @@ public class ReservationService {
             throw new ActiveReservationAlreadyExistsException(userId);
         }
 
+        UUID reserveOperationId = UUID.randomUUID();
+
         BikeReservationDetails bikeDetails =
-                bikeReservationGateway.reserveBike(bikeId);
+                bikeReservationGateway.reserveBike(
+                        bikeId,
+                        reserveOperationId
+                );
 
         try {
             Reservation reservation =
@@ -62,44 +71,14 @@ public class ReservationService {
             Reservation savedReservation = reservationRepository.save(reservation);
             reservationRepository.flush();
 
-            UUID eventId = UUID.randomUUID();
-
-            ReservationCreatedEvent event =
-                    new ReservationCreatedEvent(
-                            savedReservation.getId(),
-                            savedReservation.getUserId(),
-                            savedReservation.getBikeId(),
-                            savedReservation.getStationId(),
-                            savedReservation.getReservedAt(),
-                            savedReservation.getExpiresAt()
-                    );
-
-            EventEnvelope<ReservationCreatedEvent> envelope =
-                    new EventEnvelope<>(
-                            eventId,
-                            ReservationEventTypes.CREATED,
-                            ReservationEventTypes.AGGREGATE_TYPE,
-                            savedReservation.getId(),
-                            savedReservation.getReservedAt(),
-                            event
-                    );
-
-            String payload = eventPayloadSerializer.serialize(envelope);
-
             OutboxEvent outboxEvent =
-                    OutboxEvent.create(
-                            eventId,
-                            ReservationEventTypes.AGGREGATE_TYPE,
-                            savedReservation.getId(),
-                            ReservationEventTypes.CREATED,
-                            payload,
-                            savedReservation.getReservedAt()
-                    );
+                    reservationOutboxEventFactory.created(reservation);
+
             outboxEventRepository.save(outboxEvent);
 
             return savedReservation;
         } catch (RuntimeException e) {
-            bikeReservationGateway.releaseBike(bikeId);
+            bikeReservationGateway.releaseBike(bikeId, reserveOperationId);
             throw e;
         }
     }
@@ -123,10 +102,21 @@ public class ReservationService {
 
         Reservation reservation = getReservation(reservationId);
 
-        bikeReservationGateway.releaseBike(reservation.getBikeId());
+        UUID releaseOperationId = UUID.randomUUID();
 
-        reservation.cancel(Instant.now());
+        bikeReservationGateway.releaseBike(
+                reservation.getBikeId(),
+                releaseOperationId
+        );
 
-        return reservationRepository.save(reservation);
+        reservation.cancel(Instant.now(clock));
+
+        Reservation savedReservation = reservationRepository.save(reservation);
+
+        OutboxEvent event =
+                reservationOutboxEventFactory.cancelled(savedReservation);
+        outboxEventRepository.save(event);
+
+        return savedReservation;
     }
 }

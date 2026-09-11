@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public interface BikeReservationGateway {
 
-    BikeReservationDetails reserveBike(UUID bikeId);
+    BikeReservationDetails reserveBike(UUID bikeId, UUID operationId);
 
-    void releaseBike(UUID bikeId);
+    void releaseBike(UUID bikeId, UUID operationId);
 }

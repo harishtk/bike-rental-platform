@@ -2,9 +2,9 @@ spring:
   application:
     name: reservation-service
   datasource:
-    url: jdbc:postgresql://localhost:5431/rentaldb
-    username: admin
-    password: nopass
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5431/rentaldb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
     jpa:
@@ -15,6 +15,17 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 3000
+            read-timeout: 5000
+          bike-service:
+            connectTimeout: 2000
+            readTimeout: 3000
 
 logging:
   level:
@@ -41,16 +52,48 @@ resilience4j:
   circuitbreaker:
     instances:
       bike-service:
-        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
         slidingWindowSize: 10
         minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        registerHealthIndicator: true
+
+        ignoreExceptions:
+          - com.bikerental.reservation.application.bike.BikeNotFoundException
+          - com.bikerental.reservation.application.bike.BikeNotReservableException
+  retry:
+    instances:
+      bike-service:
+        maxAttempts: 3
+        waitDuration: 300ms
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
 kafka:
   topics:
     reservation-events: ${KAFKA_RESERVATION_EVENTS:reservation.events}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents
+
+  endpoint:
+    health:
+      show-details: always
+
+  health:
+    circuitbreakers:
+      enabled: true
+outbox:
+  publisher:
+    enabled: ${OUTBOX_PUBLISHER_ENABLED:true}
+    fixed-delay: ${OUTBOX_PUBLISHER_FIXED_DELAY:5000}
 
 server:
   port: 8001

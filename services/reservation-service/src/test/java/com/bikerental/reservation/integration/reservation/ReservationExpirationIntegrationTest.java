@@ -26,7 +26,15 @@ import com.bikerental.reservation.domain.reservation.ReservationStatus;
 import com.bikerental.reservation.infrastructure.persistence.reservation.SpringDataReservationRepository;
 
 @Testcontainers
-@SpringBootTest(classes = {ReservationServiceApplication.class})
+@SpringBootTest(
+        classes = {ReservationServiceApplication.class},
+        properties = {
+                "outbox.publisher.enabled=false",
+                "resilience4j.retry.instances.bikeService.maxAttempts=2",
+                "resilience4j.retry.instances.bikeService.waitDuration=1ms",
+                "resilience4j.circuitbreaker.instances.bikeService.minimumNumberOfCalls=100"
+        }
+)
 class ReservationExpirationIntegrationTest {
 
     @Container
@@ -37,7 +45,7 @@ class ReservationExpirationIntegrationTest {
                     .withPassword("reservation");
 
     private static final WireMockServer wireMockServer =
-            new WireMockServer(8089);
+            new WireMockServer(8000);
 
     @Autowired
     private ReservationRepository reservationRepository;
@@ -332,10 +340,10 @@ class ReservationExpirationIntegrationTest {
                 post(urlEqualTo(
                         "/api/v1/bikes/" + bikeId + "/release"
                 ))
-                .willReturn(
-                        aResponse()
-                                .withStatus(500)
-                )
+                        .willReturn(
+                                aResponse()
+                                        .withStatus(500)
+                        )
         );
 
         expirationService.expireReservations();
@@ -345,25 +353,20 @@ class ReservationExpirationIntegrationTest {
                         .findById(reservationId)
                         .orElseThrow();
 
-        /*
-         * Critical invariant:
-         *
-         * Bike release failed
-         *        ↓
-         * Reservation must remain ACTIVE
-         *
-         * This allows the scheduler to retry later.
-         */
         assertThat(persisted.getStatus())
                 .isEqualTo(ReservationStatus.ACTIVE);
 
         wireMockServer.verify(
-                1,
+                2,
                 postRequestedFor(
                         urlEqualTo(
                                 "/api/v1/bikes/" + bikeId + "/release"
                         )
                 )
+                        .withHeader(
+                                "X-Idempotency-Key",
+                                matching(".+")
+                        )
         );
     }
 

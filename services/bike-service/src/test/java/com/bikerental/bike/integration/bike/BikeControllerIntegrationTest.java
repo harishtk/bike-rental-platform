@@ -230,6 +230,7 @@ public class BikeControllerIntegrationTest extends
     void shouldReturn404WhenReservingNonExistentBike() throws Exception {
         mockMvc.perform(
                 post("/api/v1/bikes/{bikeId}/reserve", UUID.randomUUID())
+                        .header("X-Idempotency-Key", UUID.randomUUID())
         )
                 .andExpect(status().isNotFound());
     }
@@ -240,11 +241,13 @@ public class BikeControllerIntegrationTest extends
 
         mockMvc.perform(
                         post("/api/v1/bikes/{bikeId}/reserve", bikeId)
+                                .header("X-Idempotency-Key", UUID.randomUUID())
                 )
                     .andExpect(status().isAccepted());
 
         mockMvc.perform(
                 post("/api/v1/bikes/{bikeId}/reserve", bikeId)
+                        .header("X-Idempotency-Key", UUID.randomUUID())
         )
                 .andExpect(status().isConflict());
     }
@@ -255,6 +258,7 @@ public class BikeControllerIntegrationTest extends
 
         mockMvc.perform(
                         post("/api/v1/bikes/{bikeId}/release", bikeId)
+                                .header("X-Idempotency-Key", UUID.randomUUID())
                 )
                 .andExpect(status().isConflict());
     }

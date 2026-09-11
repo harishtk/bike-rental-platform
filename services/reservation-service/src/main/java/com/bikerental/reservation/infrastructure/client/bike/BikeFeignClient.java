@@ -4,6 +4,7 @@ import com.bikerental.reservation.infrastructure.config.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.UUID;
 
@@ -16,11 +17,13 @@ public interface BikeFeignClient {
 
     @PostMapping("/api/v1/bikes/{bikeId}/reserve")
     BikeFeignResponse reserveBike(
-            @PathVariable UUID bikeId
+            @PathVariable("bikeId") UUID bikeId,
+            @RequestHeader("X-Idempotency-Key") UUID idempotencyKey
     );
 
     @PostMapping("/api/v1/bikes/{bikeId}/release")
     void releaseBike(
-            @PathVariable UUID bikeId
+            @PathVariable("bikeId") UUID bikeId,
+            @RequestHeader("X-Idempotency-Key") UUID idempotencyKey
     );
 }

@@ -2,28 +2,22 @@ package com.bikerental.reservation.integration.reservation;
 
 import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
-import com.bikerental.reservation.domain.reservation.Reservation;
-import com.bikerental.reservation.infrastructure.client.bike.BikeFeignClient;
 import com.bikerental.reservation.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.shaded.org.apache.commons.lang3.time.DateUtils;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.Volume;
 
 import java.util.UUID;
 
 import static com.jayway.jsonpath.JsonPath.read;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -113,7 +107,7 @@ public class ReservationControllerIntegrationTest extends
 
     @Test
     void shouldGetAllReservations() throws Exception {
-        when(bikeReservationGateway.reserveBike(ArgumentMatchers.any(UUID.class)))
+        when(bikeReservationGateway.reserveBike(ArgumentMatchers.any(UUID.class), ArgumentMatchers.any(UUID.class)))
             .thenReturn(new BikeReservationDetails(UUID.randomUUID(), UUID.randomUUID()));
 
         String id1 = createReservation(
@@ -166,7 +160,7 @@ public class ReservationControllerIntegrationTest extends
     void shouldCancelAValidReservation() throws Exception {
         UUID bikeId = prepareBikeReservationMock();
 
-        doNothing().when(bikeReservationGateway).releaseBike(bikeId);
+        doNothing().when(bikeReservationGateway).releaseBike(eq(bikeId), ArgumentMatchers.any(UUID.class));
 
         String reservationId = createReservation(
                 UUID.randomUUID(),
@@ -250,7 +244,7 @@ public class ReservationControllerIntegrationTest extends
                         UUID.randomUUID()
                 );
 
-        when(bikeReservationGateway.reserveBike(bikeId))
+        when(bikeReservationGateway.reserveBike(eq(bikeId), ArgumentMatchers.any(UUID.class)))
                 .thenReturn(mockBikeReservationDetails);
         return bikeId;
     }

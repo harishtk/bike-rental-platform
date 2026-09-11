@@ -2,6 +2,7 @@ package com.bikerental.bike.application.bike;
 
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeFilter;
+import com.bikerental.bike.domain.bike.BikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

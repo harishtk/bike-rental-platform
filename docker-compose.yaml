@@ -1,4 +1,41 @@
 services:
+
+  bike-db:
+    image: postgres:17
+    container_name: bike-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bikedb
+      TZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    volumes:
+      - bike_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bikedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rental-db:
+    image: postgres:17
+    container_name: rental-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rentaldb
+      TZ: Asia/Kolkata
+    ports:
+      - "5431:5432"
+    volumes:
+      - rental_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d rentaldb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   bike-service:
     build: ./services/bike-service
     container_name: bike-service
@@ -6,12 +43,11 @@ services:
       - "8000:8000"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://bike-db:5432/bikedb
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: nopass
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
     depends_on:
-      - bike-db
-      - kafka
+      bike-db:
+        condition: service_healthy
 
   reservation-service:
     build: ./services/reservation-service
@@ -20,44 +56,23 @@ services:
       - "8001:8001"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://rental-db:5432/rentaldb
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: nopass
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      OUTBOX_PUBLISHER_ENABLED: true
       BIKE_SERVICE_URL: http://bike-service:8000
     depends_on:
-      - rental-db
-      - kafka
-      - bike-service
-
-  bike-db:
-    image: postgres:17
-    container_name: bike-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: nopass
-      POSTGRES_DB: bikedb
-      TZ: Asia/Kolkata
-    ports:
-      - "5432:5432"
-    volumes:
-      - bike_data:/var/lib/postgresql/data
-
-  rental-db:
-    image: postgres:17
-    container_name: rental-db
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: nopass
-      POSTGRES_DB: rentaldb
-      TZ: Asia/Kolkata
-    ports:
-      - "5431:5432"
-    volumes:
-      - rental_data:/var/lib/postgresql/data
+      rental-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      bike-service:
+        condition: service_started
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
+    restart: unless-stopped
     ports:
       - "9092:9092"
     environment:
@@ -66,9 +81,18 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
       KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092'
       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092'
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     depends_on:
       - zookeeper
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics --list --bootstrap-server localhost:9092 || exit 1" ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   zookeeper:
     image: zookeeper:3.9
@@ -80,5 +104,5 @@ services:
       ALLOW_ANONYMOUS_LOGIN: yes
 
 volumes:
-  bike_data:
-  rental_data:
+  bike_db_data:
+  rental_db_data:

@@ -1,6 +1,6 @@
 package com.bikerental.bike.integration.bike;
 
-import com.bikerental.bike.application.bike.BikeRepository;
+import com.bikerental.bike.domain.bike.BikeRepository;
 import com.bikerental.bike.application.bike.BikeService;
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeStatus;
@@ -8,8 +8,6 @@ import com.bikerental.bike.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,6 +1,6 @@
 package com.bikerental.bike.integration.bike;
 
-import com.bikerental.bike.application.bike.BikeRepository;
+import com.bikerental.bike.domain.bike.BikeRepository;
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Assertions;

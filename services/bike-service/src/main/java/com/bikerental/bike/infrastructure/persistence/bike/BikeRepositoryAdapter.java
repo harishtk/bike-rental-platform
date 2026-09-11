@@ -1,6 +1,6 @@
 package com.bikerental.bike.infrastructure.persistence.bike;
 
-import com.bikerental.bike.application.bike.BikeRepository;
+import com.bikerental.bike.domain.bike.BikeRepository;
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeFilter;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +33,11 @@ public class BikeRepositoryAdapter implements BikeRepository {
     public Optional<Bike> findById(UUID bikeId) {
         return repository.findById(bikeId)
                 .map(mapper::toDomain);
+    }
+
+    @Override
+    public Optional<Bike> findByIdForUpdate(UUID bikeId) {
+        return repository.findByIdForUpdate(bikeId).map(mapper::toDomain);
     }
 
     @Override

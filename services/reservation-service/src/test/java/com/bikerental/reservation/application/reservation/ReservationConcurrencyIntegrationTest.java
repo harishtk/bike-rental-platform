@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.*;
 
 @Testcontainers
 @SpringBootTest
+@ActiveProfiles("test")
 public class ReservationConcurrencyIntegrationTest {
 
     @Container
@@ -86,11 +88,11 @@ public class ReservationConcurrencyIntegrationTest {
 
         UUID stationId = UUID.randomUUID();
 
-        when(bikeReservationGateway.reserveBike(firstBikeId))
+        when(bikeReservationGateway.reserveBike(eq(firstBikeId), any(UUID.class)))
                 .thenReturn(new BikeReservationDetails(firstBikeId, stationId));
-        when(bikeReservationGateway.reserveBike(secondBikeId))
+        when(bikeReservationGateway.reserveBike(eq(secondBikeId), any(UUID.class)))
                 .thenReturn(new BikeReservationDetails(secondBikeId, stationId));
-        when(bikeReservationGateway.reserveBike(any()))
+        when(bikeReservationGateway.reserveBike(any(), any(UUID.class)))
                 .thenAnswer(invocation -> {
                     UUID bikeId = invocation.getArgument(0);
                     return new BikeReservationDetails(bikeId, stationId);
@@ -153,9 +155,9 @@ public class ReservationConcurrencyIntegrationTest {
 
         UUID stationId = UUID.randomUUID();
 
-        when(bikeReservationGateway.reserveBike(bikeId))
+        when(bikeReservationGateway.reserveBike(eq(bikeId), any(UUID.class)))
                 .thenReturn(new BikeReservationDetails(bikeId, stationId));
-        when(bikeReservationGateway.reserveBike(any()))
+        when(bikeReservationGateway.reserveBike(any(), any(UUID.class)))
                 .thenAnswer(invocation -> {
                     UUID _bikeId = invocation.getArgument(0);
                     return new BikeReservationDetails(_bikeId, stationId);
@@ -237,7 +239,7 @@ public class ReservationConcurrencyIntegrationTest {
 
         reservationRepository.save(expiredReservation);
 
-        when(bikeReservationGateway.reserveBike(newBikeId))
+        when(bikeReservationGateway.reserveBike(eq(newBikeId), any(UUID.class)))
                 .thenReturn(new BikeReservationDetails(newBikeId, stationId));
 
         Reservation newReservation = reservationService.createReservation(
@@ -259,7 +261,7 @@ public class ReservationConcurrencyIntegrationTest {
 
         UUID stationId = UUID.randomUUID();
 
-        when(bikeReservationGateway.reserveBike(any()))
+        when(bikeReservationGateway.reserveBike(any(), any(UUID.class)))
                 .thenAnswer(invocation -> {
                     UUID bikeId = invocation.getArgument(0);
                     return new BikeReservationDetails(bikeId, stationId);
@@ -296,8 +298,8 @@ public class ReservationConcurrencyIntegrationTest {
 
         executor.shutdown();
 
-        verify(bikeReservationGateway, times(2)).reserveBike(any());
-        verify(bikeReservationGateway, atLeastOnce()).releaseBike(any());
+        verify(bikeReservationGateway, times(2)).reserveBike(any(), any(UUID.class));
+        verify(bikeReservationGateway, atLeastOnce()).releaseBike(any(), any(UUID.class));
 
         long successCount = Stream.of(firstResult, secondResult).filter(Result::isSuccess).count();
 

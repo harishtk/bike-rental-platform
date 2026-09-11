@@ -10,7 +10,7 @@ RUN gradle dependencies --no-daemon
 COPY src ./src
 
 # Build the application
-RUN gradle build -x test --no-daemon
+RUN gradle bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine AS runner
 
