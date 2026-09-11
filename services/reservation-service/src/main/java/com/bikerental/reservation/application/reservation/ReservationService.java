@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
+import com.bikerental.reservation.application.messaging.EventEnvelope;
 import com.bikerental.reservation.application.outbox.EventPayloadSerializer;
 import com.bikerental.reservation.application.reservation.event.ReservationCreatedEvent;
 import com.bikerental.reservation.application.reservation.event.ReservationEventTypes;
@@ -61,6 +62,8 @@ public class ReservationService {
             Reservation savedReservation = reservationRepository.save(reservation);
             reservationRepository.flush();
 
+            UUID eventId = UUID.randomUUID();
+
             ReservationCreatedEvent event =
                     new ReservationCreatedEvent(
                             savedReservation.getId(),
@@ -70,10 +73,22 @@ public class ReservationService {
                             savedReservation.getReservedAt(),
                             savedReservation.getExpiresAt()
                     );
-            String payload = eventPayloadSerializer.serialize(event);
+
+            EventEnvelope<ReservationCreatedEvent> envelope =
+                    new EventEnvelope<>(
+                            eventId,
+                            ReservationEventTypes.CREATED,
+                            ReservationEventTypes.AGGREGATE_TYPE,
+                            savedReservation.getId(),
+                            savedReservation.getReservedAt(),
+                            event
+                    );
+
+            String payload = eventPayloadSerializer.serialize(envelope);
 
             OutboxEvent outboxEvent =
                     OutboxEvent.create(
+                            eventId,
                             ReservationEventTypes.AGGREGATE_TYPE,
                             savedReservation.getId(),
                             ReservationEventTypes.CREATED,

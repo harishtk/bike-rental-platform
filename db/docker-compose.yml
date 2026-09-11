@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - bike_data:/var/lib/postgresql/data
   rental-db:
     image: postgres:17
     container_name: postgres-rentaldb
@@ -24,7 +24,7 @@ services:
     ports:
       - "5431:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - rental_data:/var/lib/postgresql/data
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
@@ -36,5 +36,6 @@ services:
     depends_on:
       - bike-db
 volumes:
-  pgdata:
+  bike_data:
+  rental_data:
 

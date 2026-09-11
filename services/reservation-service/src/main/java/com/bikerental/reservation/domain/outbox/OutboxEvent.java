@@ -17,6 +17,7 @@ public class OutboxEvent {
     private Instant publishedAt;
 
     public static OutboxEvent create(
+            UUID eventId,
             String aggregateType,
             UUID aggregateId,
             String eventType,
@@ -24,7 +25,7 @@ public class OutboxEvent {
             Instant occurredAt
     ) {
         return new OutboxEvent(
-                UUID.randomUUID(),
+                eventId,
                 aggregateType,
                 aggregateId,
                 eventType,

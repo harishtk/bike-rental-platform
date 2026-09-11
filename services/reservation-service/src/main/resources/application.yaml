@@ -48,5 +48,9 @@ resilience4j:
         waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 3
 
+kafka:
+  topics:
+    reservation-events: ${KAFKA_RESERVATION_EVENTS:reservation.events}
+
 server:
-  port: 8081
+  port: 8001

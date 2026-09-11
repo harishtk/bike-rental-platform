@@ -1,0 +1,2 @@
+bike-service        : 8000
+reservation-service : 8001

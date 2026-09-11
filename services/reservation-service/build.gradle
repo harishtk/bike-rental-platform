@@ -19,6 +19,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.kafka:spring-kafka")
 
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies:2025.0.3"))
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
@@ -41,8 +42,10 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.wiremock.integrations:wiremock-spring-boot:4.0.8")
+    testImplementation("org.springframework.kafka:spring-kafka-test")
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
+
 }
 
 apply from: "${projectDir}/jacoco.gradle"
