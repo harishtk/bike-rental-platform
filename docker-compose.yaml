@@ -55,7 +55,7 @@ services:
     ports:
       - "8001:8001"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://rental-db:5432/rentaldb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://rental-db:5431/rentaldb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
@@ -66,6 +66,22 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      bike-service:
+        condition: service_started
+
+  rental-service:
+    build: ./services/rental-service
+    container_name: rental-service
+    ports:
+      - "8002:8002"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://rental-service-db:5431/rentaldb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      BIKE_SERVICE_URL: http://bike-service:8000
+    depends_on:
+      rental-service-db:
+        condition: service_healthy
       bike-service:
         condition: service_started
 

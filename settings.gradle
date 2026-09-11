@@ -1,3 +1,4 @@
 includeBuild('services/bike-service')
 includeBuild('services/reservation-service')
+includeBuild('services/rental-service')
 includeBuild('e2e-tests')
