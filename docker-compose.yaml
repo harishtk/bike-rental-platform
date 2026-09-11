@@ -8,7 +8,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://bike-db:5432/bikedb
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: nopass
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       - bike-db
       - kafka
@@ -22,7 +22,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://rental-db:5432/rentaldb
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: nopass
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       BIKE_SERVICE_URL: http://bike-service:8000
     depends_on:
       - rental-db
