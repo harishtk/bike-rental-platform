@@ -1,0 +1,16 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.bikerental'
+version = '1.0-SNAPSHOT'
+
+dependencies {
+    testImplementation("io.rest-assured:rest-assured:6.0.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+test {
+    useJUnitPlatform()
+}
