@@ -6,11 +6,21 @@ group = 'com.bikerental'
 version = '1.0-SNAPSHOT'
 
 dependencies {
+    testImplementation 'org.assertj:assertj-core:3.26.3'
     testImplementation("io.rest-assured:rest-assured:6.0.1")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testImplementation("org.slf4j:slf4j-api:2.0.18")
+    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.18")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 test {
     useJUnitPlatform()
+    systemProperty 'org.slf4j.simpleLogger.log.com.bikerental.e2e',
+            providers.gradleProperty('e2eLogLevel').getOrElse('info')
+    systemProperty 'org.slf4j.simpleLogger.showDateTime', 'true'
+    systemProperty 'org.slf4j.simpleLogger.logFile', 'System.out'
+    testLogging {
+        showStandardStreams = true
+    }
 }

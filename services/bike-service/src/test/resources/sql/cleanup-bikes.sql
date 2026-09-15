@@ -1,1 +1,2 @@
 TRUNCATE TABLE bikes CASCADE;
+TRUNCATE TABLE bike_operations CASCADE;

@@ -71,8 +71,7 @@ public class Bike {
     }
 
     public void rent() {
-        if (status != BikeStatus.AVAILABLE &&
-            status != BikeStatus.RESERVED) {
+        if (status != BikeStatus.AVAILABLE) {
             throw new InvalidBikeStateException(
                     "Bike cannot be rented from status " + status
             );
@@ -95,8 +94,8 @@ public class Bike {
             );
         }
 
-        stationId = returnStationId;
-        status = BikeStatus.AVAILABLE;
+        this.stationId = returnStationId;
+        this.status = BikeStatus.AVAILABLE;
         touch();
     }
 
@@ -171,7 +170,7 @@ public class Bike {
     }
 
     private void touch() {
-        updatedAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
 }

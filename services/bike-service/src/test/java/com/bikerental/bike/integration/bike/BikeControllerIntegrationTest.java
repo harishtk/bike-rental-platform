@@ -263,6 +263,348 @@ public class BikeControllerIntegrationTest extends
                 .andExpect(status().isConflict());
     }
 
+    @Test
+    void shouldRentBike() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/v1/bikes/{bikeId}", bikeId)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.status",
+                        is("RENTED")
+                ));
+    }
+
+    @Test
+    void shouldReturnRentedBike() throws Exception {
+        UUID originalStationId = UUID.randomUUID();
+        UUID returnStationId = UUID.randomUUID();
+
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                originalStationId
+        );
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                )
+                .andExpect(status().isNoContent());
+
+        String request = """
+            {
+                "stationId": "%s"
+            }
+            """.formatted(returnStationId);
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/return", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/v1/bikes/{bikeId}", bikeId)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.status",
+                        is("AVAILABLE")
+                ))
+                .andExpect(jsonPath(
+                        "$.stationId",
+                        is(returnStationId.toString())
+                ));
+    }
+
+    @Test
+    void shouldReturn404WhenRentingNonExistentBike() throws Exception {
+        mockMvc.perform(
+                        post(
+                                "/api/v1/bikes/{bikeId}/rent",
+                                UUID.randomUUID()
+                        )
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturn404WhenReturningNonExistentBike() throws Exception {
+        String request = """
+            {
+                "stationId": "%s"
+            }
+            """.formatted(UUID.randomUUID());
+
+        mockMvc.perform(
+                        post(
+                                "/api/v1/bikes/{bikeId}/return",
+                                UUID.randomUUID()
+                        )
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturn409WhenRentingAlreadyRentedBike() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                )
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldReturn409WhenReturningBikeThatIsNotRented() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        String request = """
+            {
+                "stationId": "%s"
+            }
+            """.formatted(UUID.randomUUID());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/return", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldRequireIdempotencyKeyWhenRentingBike() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRequireIdempotencyKeyWhenReturningBike() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        String request = """
+            {
+                "stationId": "%s"
+            }
+            """.formatted(UUID.randomUUID());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/return", bikeId)
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRentBikeIdempotently() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        UUID operationId = UUID.randomUUID();
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        operationId
+                                )
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        operationId
+                                )
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/v1/bikes/{bikeId}", bikeId)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.status",
+                        is("RENTED")
+                ));
+    }
+
+    @Test
+    void shouldReturnBikeIdempotently() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        UUID.randomUUID()
+                                )
+                )
+                .andExpect(status().isNoContent());
+
+        UUID returnStationId = UUID.randomUUID();
+        UUID operationId = UUID.randomUUID();
+
+        String request = """
+            {
+                "stationId": "%s"
+            }
+            """.formatted(returnStationId);
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/return", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        operationId
+                                )
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/return", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        operationId
+                                )
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/v1/bikes/{bikeId}", bikeId)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.status",
+                        is("AVAILABLE")
+                ))
+                .andExpect(jsonPath(
+                        "$.stationId",
+                        is(returnStationId.toString())
+                ));
+    }
+
+    @Test
+    void shouldReturn409WhenSameIdempotencyKeyUsedForRentAndReturn() throws Exception {
+        String bikeId = createBike(
+                "01",
+                "Off-Road",
+                UUID.randomUUID()
+        );
+
+        UUID operationId = UUID.randomUUID();
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/rent", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        operationId
+                                )
+                )
+                .andExpect(status().isNoContent());
+
+        String request = """
+            {
+                "stationId": "%s"
+            }
+            """.formatted(UUID.randomUUID());
+
+        mockMvc.perform(
+                        post("/api/v1/bikes/{bikeId}/return", bikeId)
+                                .header(
+                                        "X-Idempotency-Key",
+                                        operationId
+                                )
+                                .contentType(APPLICATION_JSON)
+                                .content(request)
+                )
+                .andExpect(status().isConflict());
+    }
+
     private String createBike(
             String serialNumber,
             String type,

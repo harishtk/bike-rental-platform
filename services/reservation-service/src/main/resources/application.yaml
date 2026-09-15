@@ -2,7 +2,7 @@ spring:
   application:
     name: reservation-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5431/rentaldb}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5431/rentaldb?currentSchema=reservation}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -14,6 +14,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        default_schema: reservation
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   cloud:
@@ -26,6 +27,11 @@ spring:
           bike-service:
             connectTimeout: 2000
             readTimeout: 3000
+  flyway:
+    enabled: true
+    schemas: reservation
+    default-schema: reservation
+    create-schemas: true
 
 logging:
   level:
@@ -94,6 +100,11 @@ outbox:
   publisher:
     enabled: ${OUTBOX_PUBLISHER_ENABLED:true}
     fixed-delay: ${OUTBOX_PUBLISHER_FIXED_DELAY:5000}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
 
 server:
   port: 8001

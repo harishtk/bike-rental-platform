@@ -39,4 +39,33 @@ public record BikeOperation(
                 processedAt
         );
     }
+
+    public static BikeOperation rent(
+            UUID operationId,
+            UUID bikeId,
+            Instant processedAt
+    ) {
+        return new BikeOperation(
+                operationId,
+                bikeId,
+                BikeOperationType.RENT,
+                null,
+                processedAt
+        );
+    }
+
+    public static BikeOperation returnBike(
+            UUID operationId,
+            UUID bikeId,
+            UUID stationId,
+            Instant processedAt
+    ) {
+        return new BikeOperation(
+                operationId,
+                bikeId,
+                BikeOperationType.RETURN,
+                stationId,
+                processedAt
+        );
+    }
 }

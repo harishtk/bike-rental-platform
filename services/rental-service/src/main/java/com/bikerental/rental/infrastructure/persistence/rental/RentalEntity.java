@@ -2,6 +2,7 @@ package com.bikerental.rental.infrastructure.persistence.rental;
 
 import com.bikerental.rental.domain.rental.RentalStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -12,7 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "rentals")
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RentalEntity {
 
     @Id
@@ -53,7 +54,7 @@ public class RentalEntity {
     private Instant updatedAt;
 
     @Version
-    private long version;
+    private Long version;
 
     public RentalEntity(
             UUID id,
@@ -67,7 +68,8 @@ public class RentalEntity {
             BigDecimal dailyRate,
             BigDecimal totalAmount,
             Instant createdAt,
-            Instant updatedAt
+            Instant updatedAt,
+            Long version
     ) {
         this.id = id;
         this.userId = userId;
@@ -81,5 +83,6 @@ public class RentalEntity {
         this.totalAmount = totalAmount;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.version = version;
     }
 }

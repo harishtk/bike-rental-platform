@@ -1,10 +1,7 @@
 package com.bikerental.bike.api.bike;
 
 import com.bikerental.bike.api.common.PagedResponse;
-import com.bikerental.bike.application.bike.BikeReservationCommandService;
-import com.bikerental.bike.application.bike.BikeReservationResult;
-import com.bikerental.bike.application.bike.BikeService;
-import com.bikerental.bike.application.bike.CreateBikeCommand;
+import com.bikerental.bike.application.bike.*;
 import com.bikerental.bike.domain.bike.Bike;
 import com.bikerental.bike.domain.bike.BikeFilter;
 import com.bikerental.bike.domain.bike.BikeStatus;
@@ -30,7 +27,9 @@ public class BikeController {
 
     private final BikeService bikeService;
     private final BikeResponseMapper mapper;
+
     private final BikeReservationCommandService bikeReservationCommandService;
+    private final BikeRentalCommandService bikeRentalCommandService;
 
     @PostMapping
     public ResponseEntity<BikeResponse> create(@Valid @RequestBody CreateBikeRequest request, UriComponentsBuilder uriBuilder) {
@@ -53,6 +52,25 @@ public class BikeController {
         BikeFilter filter = new BikeFilter(stationId, statusEnum, pageable);
         var pagedResponse = PagedResponse.of(bikeService.getAll(filter, pageable).map(mapper::toResponse));
         return ResponseEntity.ok(pagedResponse);
+    }
+
+    @PostMapping("/{bikeId}/rent")
+    public ResponseEntity<Void> rentBike(
+            @PathVariable("bikeId") UUID bikeId,
+            @RequestHeader(IDEMPOTENCY_HEADER) UUID operationId
+    ) {
+        bikeRentalCommandService.rentBike(bikeId, operationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{bikeId}/return")
+    public ResponseEntity<Void> returnBike(
+            @PathVariable("bikeId") UUID bikeId,
+            @RequestHeader(IDEMPOTENCY_HEADER) UUID operationId,
+            @RequestBody @Valid ReturnBikeRequest request
+    ) {
+        bikeRentalCommandService.returnBike(bikeId, request.stationId(), operationId);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{bikeId}/reserve")

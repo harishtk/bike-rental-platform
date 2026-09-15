@@ -14,19 +14,13 @@ public class FeignBikeRentalGateway
     private final BikeFeignClient client;
 
     @Override
-    public BikeRentalDetails startRental(
+    public void startRental(
             UUID bikeId,
             UUID operationId
     ) {
-        BikeFeignResponse response =
-                client.rentBike(
-                        bikeId,
-                        operationId
-                );
-
-        return new BikeRentalDetails(
-                response.id(),
-                response.stationId()
+        client.rentBike(
+                bikeId,
+                operationId
         );
     }
 
@@ -38,7 +32,7 @@ public class FeignBikeRentalGateway
     ) {
         client.returnBike(
                 bikeId,
-                stationId,
+                new ReturnBikeRequest(stationId),
                 operationId
         );
     }

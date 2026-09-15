@@ -15,6 +15,7 @@ import java.util.UUID;
 public class RentalController {
 
     private final RentalService rentalService;
+    private final RentalResponseMapper mapper;
 
     @PostMapping
     public ResponseEntity<RentalResponse> create(
@@ -22,10 +23,11 @@ public class RentalController {
             CreateRentalRequest request
     ) {
         return ResponseEntity.ok(
-                toResponse(
+                mapper.toResponse(
                         rentalService.startRental(
                                 request.userId(),
                                 request.bikeId(),
+                                request.stationId(),
                                 request.dailyRate()
                         )
                 )
@@ -39,7 +41,7 @@ public class RentalController {
             ReturnRentalRequest request
     ) {
         return ResponseEntity.ok(
-                toResponse(
+                mapper.toResponse(
                         rentalService.returnRental(
                                 rentalId,
                                 request.stationId()
@@ -53,26 +55,11 @@ public class RentalController {
             @PathVariable UUID rentalId
     ) {
         return ResponseEntity.ok(
-                toResponse(
+                mapper.toResponse(
                         rentalService.completeRental(
                                 rentalId
                         )
                 )
-        );
-    }
-
-    private RentalResponse toResponse(Rental rental) {
-        return new RentalResponse(
-                rental.getId(),
-                rental.getUserId(),
-                rental.getBikeId(),
-                rental.getStartStationId(),
-                rental.getReturnStationId(),
-                rental.getStatus(),
-                rental.getStartedAt(),
-                rental.getReturnedAt(),
-                rental.getDailyRate(),
-                rental.getTotalAmount()
         );
     }
 }

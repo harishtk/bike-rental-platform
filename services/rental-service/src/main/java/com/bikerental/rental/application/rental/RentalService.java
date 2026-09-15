@@ -26,6 +26,7 @@ public class RentalService {
     public Rental startRental(
             UUID userId,
             UUID bikeId,
+            UUID stationId,
             BigDecimal dailyRate
     ) {
         if (rentalRepository.existsByUserIdAndStatus(
@@ -48,17 +49,16 @@ public class RentalService {
 
         UUID operationId = UUID.randomUUID();
 
-        BikeRentalDetails bike =
-                bikeRentalGateway.startRental(
-                        bikeId,
-                        operationId
-                );
+        bikeRentalGateway.startRental(
+                bikeId,
+                operationId
+        );
 
         Rental rental =
                 Rental.start(
                         userId,
                         bikeId,
-                        bike.stationId(),
+                        stationId,
                         dailyRate,
                         Instant.now(clock)
                 );
@@ -106,7 +106,7 @@ public class RentalService {
     public Rental completeRental(UUID rentalId) {
         Rental rental =
                 rentalRepository.findById(rentalId)
-                        .orElseThrow();
+                        .orElseThrow(() -> new RentalNotFoundException(rentalId));
 
         rental.complete(
                 Instant.now(clock)

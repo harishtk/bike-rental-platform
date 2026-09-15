@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public interface BikeRentalGateway {
 
-    BikeRentalDetails startRental(
+    void startRental(
             UUID bikeId,
             UUID operationId
     );

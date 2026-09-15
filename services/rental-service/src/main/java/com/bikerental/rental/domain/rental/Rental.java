@@ -2,7 +2,6 @@ package com.bikerental.rental.domain.rental;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,6 +29,8 @@ public class Rental {
     private final Instant createdAt;
     private Instant updatedAt;
 
+    private final Long version;
+
     public static Rental start(
             UUID userId,
             UUID bikeId,
@@ -49,7 +50,8 @@ public class Rental {
                 dailyRate,
                 BigDecimal.ZERO,
                 now,
-                now
+                now,
+                null
         );
     }
 
@@ -65,7 +67,8 @@ public class Rental {
             BigDecimal dailyRate,
             BigDecimal totalAmount,
             Instant createdAt,
-            Instant updatedAt
+            Instant updatedAt,
+            Long version
     ) {
         return new Rental(
                 id,
@@ -79,7 +82,8 @@ public class Rental {
                 dailyRate,
                 totalAmount,
                 createdAt,
-                updatedAt
+                updatedAt,
+                version
         );
     }
 
@@ -90,7 +94,7 @@ public class Rental {
     ) {
         if (status != RentalStatus.ACTIVE) {
             throw new IllegalStateException(
-                    "Only active rental can be returned"
+                    "Only active     rental can be returned"
             );
         }
 

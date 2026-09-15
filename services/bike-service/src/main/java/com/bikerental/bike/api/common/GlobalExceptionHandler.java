@@ -2,6 +2,7 @@ package com.bikerental.bike.api.common;
 
 import com.bikerental.bike.application.bike.BikeNotFoundException;
 import com.bikerental.bike.application.bike.DuplicateBikeSerialNumberException;
+import com.bikerental.bike.application.idempotency.IdempotencyKeyConflictException;
 import com.bikerental.bike.application.station.StationNotFoundException;
 import com.bikerental.bike.domain.bike.InvalidBikeStateException;
 import org.springframework.http.HttpStatus;
@@ -87,6 +88,22 @@ public class GlobalExceptionHandler {
         var response = ErrorResponse.create(
                 HttpStatus.CONFLICT.value(),
                 "BIKE_UNAVAILABLE",
+                exception.getMessage(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
+    @ExceptionHandler(IdempotencyKeyConflictException.class)
+    public ResponseEntity<ErrorResponse<Object>> handleIdempotencyKeyConflict(
+            IdempotencyKeyConflictException exception
+    ) {
+        var response = ErrorResponse.create(
+                HttpStatus.CONFLICT.value(),
+                "IDEMPOTENCY_KEY_CONFLICT",
                 exception.getMessage(),
                 null
         );

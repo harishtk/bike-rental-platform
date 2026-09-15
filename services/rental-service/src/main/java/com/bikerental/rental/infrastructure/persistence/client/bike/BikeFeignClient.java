@@ -5,24 +5,19 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@FeignClient(
-        name = "bike-service",
-        url = "${clients.bike-service.url}"
-)
+@FeignClient(name = "bike-service")
 public interface BikeFeignClient {
 
     @PostMapping("/api/v1/bikes/{bikeId}/rent")
-    BikeFeignResponse rentBike(
+    void rentBike(
             @PathVariable UUID bikeId,
-            @RequestHeader("X-Idempotency-Key")
-            UUID operationId
+            @RequestHeader("X-Idempotency-Key") UUID operationId
     );
 
     @PostMapping("/api/v1/bikes/{bikeId}/return")
     void returnBike(
             @PathVariable UUID bikeId,
-            @RequestParam UUID stationId,
-            @RequestHeader("X-Idempotency-Key")
-            UUID operationId
+            @RequestBody ReturnBikeRequest request,
+            @RequestHeader("X-Idempotency-Key") UUID operationId
     );
 }

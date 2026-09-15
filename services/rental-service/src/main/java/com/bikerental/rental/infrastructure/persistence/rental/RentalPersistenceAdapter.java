@@ -5,6 +5,7 @@ import com.bikerental.rental.domain.rental.RentalRepository;
 import com.bikerental.rental.domain.rental.RentalStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -15,20 +16,18 @@ public class RentalPersistenceAdapter
         implements RentalRepository {
 
     private final SpringDataRentalRepository repository;
+    private final RentalMapper mapper;
 
     @Override
+    @Transactional
     public Rental save(Rental rental) {
-        return toDomain(
-                repository.save(
-                        toEntity(rental)
-                )
-        );
+        return mapper.toDomain(repository.saveAndFlush(mapper.toEntity(rental)));
     }
 
     @Override
     public Optional<Rental> findById(UUID rentalId) {
         return repository.findById(rentalId)
-                .map(this::toDomain);
+                .map(mapper::toDomain);
     }
 
     @Override
@@ -50,40 +49,6 @@ public class RentalPersistenceAdapter
         return repository.existsByBikeIdAndStatus(
                 bikeId,
                 status
-        );
-    }
-
-    private RentalEntity toEntity(Rental rental) {
-        return new RentalEntity(
-                rental.getId(),
-                rental.getUserId(),
-                rental.getBikeId(),
-                rental.getStartStationId(),
-                rental.getReturnStationId(),
-                rental.getStartedAt(),
-                rental.getReturnedAt(),
-                rental.getStatus(),
-                rental.getDailyRate(),
-                rental.getTotalAmount(),
-                rental.getCreatedAt(),
-                rental.getUpdatedAt()
-        );
-    }
-
-    private Rental toDomain(RentalEntity entity) {
-        return Rental.restore(
-                entity.getId(),
-                entity.getUserId(),
-                entity.getBikeId(),
-                entity.getStartStationId(),
-                entity.getReturnStationId(),
-                entity.getStartedAt(),
-                entity.getReturnedAt(),
-                entity.getStatus(),
-                entity.getDailyRate(),
-                entity.getTotalAmount(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
         );
     }
 }

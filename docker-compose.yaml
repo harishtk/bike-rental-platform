@@ -1,40 +1,8 @@
 services:
 
-  bike-db:
-    image: postgres:17
-    container_name: bike-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: bikedb
-      TZ: Asia/Kolkata
-    ports:
-      - "5432:5432"
-    volumes:
-      - bike_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d bikedb"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  rental-db:
-    image: postgres:17
-    container_name: rental-db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: rentaldb
-      TZ: Asia/Kolkata
-    ports:
-      - "5431:5432"
-    volumes:
-      - rental_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d rentaldb" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+  # ============================================================
+  # BIKE SERVICE
+  # ============================================================
 
   bike-service:
     build: ./services/bike-service
@@ -45,9 +13,42 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://bike-db:5432/bikedb
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+
+      EUREKA_URL: http://discovery-service:8761/eureka
+
     depends_on:
       bike-db:
         condition: service_healthy
+      discovery-service:
+        condition: service_started
+
+
+  bike-db:
+    image: postgres:17-alpine
+    container_name: bike-db
+    environment:
+      POSTGRES_DB: bikedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    volumes:
+      - bike_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d bikedb"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  # ============================================================
+  # RESERVATION SERVICE
+  # ============================================================
 
   reservation-service:
     build: ./services/reservation-service
@@ -55,19 +56,32 @@ services:
     ports:
       - "8001:8001"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://rental-db:5431/rentaldb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://rental-db:5432/rentaldb?currentSchema=reservation
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      OUTBOX_PUBLISHER_ENABLED: true
+
       BIKE_SERVICE_URL: http://bike-service:8000
+
+      EUREKA_URL: http://discovery-service:8761/eureka
+
+      OUTBOX_PUBLISHER_ENABLED: "true"
+
     depends_on:
       rental-db:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       bike-service:
         condition: service_started
+      discovery-service:
+        condition: service_started
+
+
+  # ============================================================
+  # RENTAL SERVICE
+  # ============================================================
 
   rental-service:
     build: ./services/rental-service
@@ -75,50 +89,177 @@ services:
     ports:
       - "8002:8002"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://rental-service-db:5431/rentaldb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://rental-db:5432/rentaldb?currentSchema=rental
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+
       BIKE_SERVICE_URL: http://bike-service:8000
+
+      EUREKA_URL: http://discovery-service:8761/eureka
+
     depends_on:
-      rental-service-db:
+      rental-db:
         condition: service_healthy
       bike-service:
         condition: service_started
+      discovery-service:
+        condition: service_started
+
+
+  # ============================================================
+  # SHARED RENTAL DB
+  # reservation-service + rental-service
+  # ============================================================
+
+  rental-db:
+    image: postgres:17-alpine
+    container_name: rental-db
+    environment:
+      POSTGRES_DB: rentaldb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: Asia/Kolkata
+    ports:
+      - "5431:5432"
+    volumes:
+      - rental_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d rentaldb"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  # ============================================================
+  # AUTH SERVICE
+  # ============================================================
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    ports:
+      - "8003:8003"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/authdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      JWT_ISSUER: http://auth-service:8003
+      JWT_ACCESS_TOKEN_TTL: 3600
+
+      EUREKA_URL: http://discovery-service:8761/eureka
+
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_started
+
+
+  auth-db:
+    image: postgres:17-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d authdb"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  # ============================================================
+  # KAFKA
+  # ============================================================
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
-    restart: unless-stopped
     ports:
       - "9092:9092"
+
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092'
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093
+
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
 
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-    depends_on:
-      - zookeeper
+
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
     healthcheck:
-      test: [ "CMD-SHELL", "kafka-topics --list --bootstrap-server localhost:9092 || exit 1" ]
-      interval: 5s
+      test:
+        [
+          "CMD-SHELL",
+          "kafka-topics --bootstrap-server localhost:9092 --list"
+        ]
+      interval: 10s
       timeout: 10s
-      retries: 3
+      retries: 10
       start_period: 20s
 
-  zookeeper:
-    image: zookeeper:3.9
-    container_name: zookeeper
+
+  # ============================================================
+  # DISCOVERY SERVICE
+  # ============================================================
+
+  discovery-service:
+    build: ./platform/discovery-service
+    container_name: discovery-service
     ports:
-      - "2181:2181"
+      - "8761:8761"
+
+
+  # ============================================================
+  # API GATEWAY
+  # ============================================================
+
+  api-gateway:
+    build: ./platform/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+
     environment:
-      ZOO_MY_ID: 1
-      ALLOW_ANONYMOUS_LOGIN: yes
+      EUREKA_URL: http://discovery-service:8761/eureka
+
+      JWT_ISSUER: http://auth-service:8003
+      JWT_JWK_SET_URI: http://auth-service:8003/.well-known/jwks.json
+
+    depends_on:
+      discovery-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
+
 
 volumes:
   bike_db_data:
   rental_db_data:
+  auth_db_data:

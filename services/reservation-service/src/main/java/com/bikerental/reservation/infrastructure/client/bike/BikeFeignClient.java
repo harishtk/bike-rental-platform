@@ -10,7 +10,6 @@ import java.util.UUID;
 
 @FeignClient(
         name = "bike-service",
-        url = "${clients.bike-service.url}",
         configuration = {FeignConfig.class}
 )
 public interface BikeFeignClient {

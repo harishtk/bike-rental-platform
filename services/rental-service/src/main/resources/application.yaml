@@ -6,12 +6,28 @@ spring:
     name: rental-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5431/rentaldb}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5431/rentaldb?currentSchema=rental}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
 
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
+      properties:
+        hibernate:
+          default_schema: rental
+
+  flyway:
+    enabled: true
+    schemas: rental
+    default-schema: rental
+    create-schemas: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
 
 clients:
   bike-service:

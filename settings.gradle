@@ -1,4 +1,7 @@
 includeBuild('services/bike-service')
 includeBuild('services/reservation-service')
 includeBuild('services/rental-service')
+includeBuild('services/auth-service')
+includeBuild('platform/discovery-service')
+includeBuild('platform/api-gateway')
 includeBuild('e2e-tests')
