@@ -5,6 +5,7 @@ import com.bikerental.reservation.application.bike.BikeNotReservableException;
 import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeServiceUnavailableException;
 import feign.FeignException;
+import feign.RequestTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,7 +79,8 @@ class FeignBikeReservationGatewayTest {
                                                         "/api/v1/bikes/" + bikeId + "/reserve",
                                                         Map.of(),
                                                         null,
-                                                        StandardCharsets.UTF_8
+                                                        StandardCharsets.UTF_8,
+                                                        new RequestTemplate()
                                                 )
                                         )
                                         .build()
@@ -108,7 +110,8 @@ class FeignBikeReservationGatewayTest {
                                                         "/api/v1/bikes/" + bikeId + "/reserve",
                                                         Map.of(),
                                                         null,
-                                                        StandardCharsets.UTF_8
+                                                        StandardCharsets.UTF_8,
+                                                        new RequestTemplate()
                                                 )
                                         )
                                         .build()
@@ -138,7 +141,8 @@ class FeignBikeReservationGatewayTest {
                                                         "/api/v1/bikes/" + bikeId + "/reserve",
                                                         Map.of(),
                                                         null,
-                                                        StandardCharsets.UTF_8
+                                                        StandardCharsets.UTF_8,
+                                                        new RequestTemplate()
                                                 )
                                         )
                                         .build()

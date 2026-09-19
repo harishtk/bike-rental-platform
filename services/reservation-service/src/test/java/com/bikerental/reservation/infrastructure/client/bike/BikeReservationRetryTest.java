@@ -5,6 +5,7 @@ import com.bikerental.reservation.application.bike.BikeReservationGateway;
 import com.bikerental.reservation.integration.AbstractPostgresIntegrationTest;
 import feign.FeignException;
 import feign.Request;
+import feign.RequestTemplate;
 import feign.Response;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,7 +89,8 @@ class BikeReservationRetryTest extends AbstractPostgresIntegrationTest {
                                 + "/reserve",
                         Map.of(),
                         null,
-                        StandardCharsets.UTF_8
+                        StandardCharsets.UTF_8,
+                        new RequestTemplate()
                 );
 
         Response response =

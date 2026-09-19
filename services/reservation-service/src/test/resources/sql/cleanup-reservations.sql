@@ -1,1 +1,1 @@
-TRUNCATE TABLE reservations CASCADE;
+TRUNCATE TABLE reservation.reservations;
