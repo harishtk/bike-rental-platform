@@ -178,7 +178,7 @@ jobs:
                 jq -er --arg prefix "$repository_uri@" '
                   [
                     .[0].RepoDigests[]?
-                    | select(startsWith($prefix))
+                    | select(startswith($prefix))
                   ]
                   | unique
                   | if length == 1 then .[0]
