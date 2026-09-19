@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
+# Local pipeline: bash ops/pipeline.sh [verify|images|e2e|all] [image-tag]
+# See README.md for prerequisites, artifacts, and the failure-cleanup exercise.
+
+# Propagate ERR traps, reject unset variables, and detect failed pipeline commands.
 set -Eeuo pipefail
 
 stage="${1:-verify}"
 image_tag="${2:-local}"
 
+# Resolve paths relative to this file, not the caller's working directory.
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 services=(
@@ -49,6 +54,7 @@ check_docker() {
         die "Docker must be running Linux containers."
 }
 
+# The subshell restores the caller's directory automatically, including on failure.
 verify_service() (
     local service_path="$1"
     local service_directory="$repo_root/$service_path"
@@ -83,6 +89,7 @@ build_image() {
 
     printf '\n=== Building %s ===\n' "$image"
 
+    # Build only; verification and registry publication are separate concerns.
     docker build \
         --file "$service_directory/Dockerfile" \
         --tag "$image" \
@@ -108,6 +115,8 @@ check_e2e_tools() {
     docker compose version >/dev/null
 }
 
+# Only the token goes to stdout: callers capture it with command substitution.
+# Progress goes to stderr, and neither credentials nor response bodies are logged.
 wait_for_auth() {
     local gateway_url="$1"
     local deadline=$((SECONDS + 120))
@@ -118,6 +127,7 @@ wait_for_auth() {
 
     while (( SECONDS < deadline )); do
         attempt=$((attempt + 1))
+        # A timed-out registration may have succeeded; avoid reusing its username.
         username="probe-$(date +%s)-$$-${RANDOM}-${attempt}"
 
         body="$(jq -nc \
@@ -149,6 +159,7 @@ wait_for_auth() {
     return 1
 }
 
+# Retry discovery/readiness delays here, never business-test assertion failures.
 wait_for_route() {
     local gateway_url="$1"
     local token="$2"
@@ -184,6 +195,7 @@ wait_for_route() {
     return 1
 }
 
+# Scope environment variables and EXIT/signal traps to this E2E run.
 run_e2e() (
     check_e2e_tools
 
@@ -196,6 +208,7 @@ run_e2e() (
 
     mkdir -p -- "$artifact_directory"
 
+    # Reuse the exact project/file arguments for startup, diagnostics, and cleanup.
     local -a compose=(
         docker compose
         -p "$project"
@@ -231,11 +244,13 @@ run_e2e() (
 
             printf 'Removing E2E stack: %s\n' "$project"
 
+            # Delete only this run's disposable resources; keep application images.
             "${compose[@]}" down --volumes --remove-orphans
 
             if (( $? != 0 )); then
                 printf 'ERROR: Cleanup failed for %s.\n' "$project" >&2
 
+                # Preserve the original failure, or fail a successful test on cleanup.
                 if (( exit_code == 0 )); then
                     exit_code=1
                 fi
@@ -246,6 +261,8 @@ run_e2e() (
         exit "$exit_code"
     }
 
+    # EXIT handles normal completion/errors; catchable signals retain nonzero status.
+    # Forced termination (SIGKILL, host shutdown) cannot guarantee cleanup.
     trap 'cleanup_e2e "$?"' EXIT
     trap 'exit 130' INT
     trap 'exit 143' TERM
@@ -263,6 +280,7 @@ run_e2e() (
         --wait \
         --wait-timeout 300
 
+    # Discover the dynamically assigned loopback port instead of assuming 8080.
     local binding
     binding="$("${compose[@]}" port api-gateway 8080)"
     binding="${binding//$'\r'/}"
@@ -281,6 +299,7 @@ run_e2e() (
 
     wait_for_route "$gateway_url" "$token" GET "/api/v1/stations"
     wait_for_route "$gateway_url" "$token" GET "/api/v1/reservations"
+    # OPTIONS checks rental routing without creating a business resource.
     wait_for_route "$gateway_url" "$token" OPTIONS "/api/v1/rentals"
 
     unset token
@@ -291,7 +310,8 @@ run_e2e() (
 
     local test_exit=0
 
-    # Retain Gradle output while preserving its exit status.
+    # pipefail prevents tee from hiding a Gradle failure. Capture the failure so
+    # test reports can be copied before exiting; rerun against the fresh database.
     bash ./gradlew test \
         --rerun-tasks \
         --console=plain \

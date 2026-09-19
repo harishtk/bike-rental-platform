@@ -1,3 +1,5 @@
+# Local pipeline: pwsh -File ./ops/pipeline.ps1 -Stage all -ImageTag local
+# See README.md for prerequisites, artifacts, and the failure-cleanup exercise.
 param(
     [Parameter(Position = 0)]
     [ValidateSet("verify", "images", "e2e", "all")]
@@ -10,6 +12,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Resolve paths relative to this file, not the caller's working directory.
 $repoRoot = Split-Path -Parent $PSScriptRoot
 
 $services = @(
@@ -45,6 +48,7 @@ function Invoke-ServiceVerification
     Write-Host ""
     Write-Host "=== Verifying $ServicePath ===" -ForegroundColor Cyan
 
+    # Always restore the caller's directory, even when Gradle fails.
     Push-Location $serviceDirectory
     try {
         if ($IsWindows) {
@@ -53,6 +57,7 @@ function Invoke-ServiceVerification
             & bash $wrapperPath check bootJar --console=plain --no-daemon
         }
 
+        # Native tools report failure through their exit code, not a PS exception.
         if ($LASTEXITCODE -ne 0) {
             throw "Verification failed for $ServicePath (exit code $LASTEXITCODE)."
         }
@@ -83,6 +88,7 @@ function Invoke-ServiceImageBuild {
     Write-Host ""
     Write-Host "=== Building $image ===" -ForegroundColor Cyan
 
+    # Build only; verification and registry publication are separate concerns.
     & docker build `
         --file $dockerfile `
         --tag $image `
@@ -101,6 +107,7 @@ function Invoke-EndToEndTests {
         [string]$Tag
     )
 
+    # Project-scoped names isolate containers, networks, and disposable volumes.
     $project = "bike-ci-" + [guid]::NewGuid().ToString("N").Substring(0, 12)
     $composeFile = Join-Path $repoRoot "ops\compose.ci.yaml"
     $artifactDirectory = Join-Path $repoRoot "build\pipeline\$project"
@@ -108,10 +115,12 @@ function Invoke-EndToEndTests {
     New-Item -ItemType Directory -Force -Path $artifactDirectory |
         Out-Null
 
+    # Use identical project/file arguments for startup, diagnostics, and cleanup.
     $composeArgs = @(
         "compose", "-p", $project, "-f", $composeFile
     )
 
+    # Save caller settings and restore them even if startup or tests fail.
     $previousImageTag = $env:IMAGE_TAG
     $previousGatewayUrl = $env:API_GATEWAY_URL
     $cleanupNeeded = $false
@@ -138,6 +147,7 @@ function Invoke-EndToEndTests {
             throw "E2E stack failed to become healthy."
         }
 
+        # Discover the assigned loopback port instead of assuming host port 8080.
         $binding = & docker @composeArgs port api-gateway 8080
         if ($LASTEXITCODE -ne 0)
         {
@@ -185,6 +195,7 @@ function Invoke-EndToEndTests {
             Authorization = "Bearer $($registration.accessToken)"
         }
 
+        # OPTIONS checks rental routing without creating a rental.
         $routes = @(
             @{ Path = "/api/v1/stations"; Method = "Get" }
             @{ Path = "/api/v1/reservations"; Method = "Get" }
@@ -210,6 +221,8 @@ function Invoke-EndToEndTests {
         Write-Host "Gateway routes are ready. Running E2E tests." `
             -ForegroundColor Cyan
 
+        # Force execution against fresh data; never retry failed test assertions.
+        # Gradle reports remain in e2e-tests/build rather than the run log directory.
         Push-Location (Join-Path $repoRoot "e2e-tests")
         try {
             if ($IsWindows) {
@@ -228,6 +241,7 @@ function Invoke-EndToEndTests {
         }
     }
     catch {
+        # Retain the original error while the finally block collects diagnostics.
         $failure = $_
     }
     finally {
@@ -248,6 +262,8 @@ function Invoke-EndToEndTests {
                     Write-Warning "Could not collect all diagnostics: $_"
                 }
                 finally {
+                    # Remove only this run's resources, including its test databases.
+                    # Abrupt process/host termination can still require manual cleanup.
                     & docker @composeArgs down --volumes --remove-orphans
 
                     if ($LASTEXITCODE -ne 0) {
@@ -274,6 +290,8 @@ function Invoke-EndToEndTests {
     }
 }
 
+# Retry readiness failures only. Successful probe output is returned to the caller
+# (registration returns a token-bearing object); do not log that response object.
 function Wait-ForEndpoint {
     param(
         [Parameter(Mandatory)]
@@ -334,6 +352,7 @@ try {
             Invoke-EndToEndTests -Tag $ImageTag
         }
 
+        # Standalone stages are independent; all enforces the complete stage order.
         "all" {
             if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
                 throw "Docker CLI was not found. Install Docker Desktop."
