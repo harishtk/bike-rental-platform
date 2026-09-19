@@ -157,6 +157,10 @@ jobs:
             discovery-service
             api-gateway
           )
+          
+          mkdir -p build/release
+          entries_file="build/release/images.jsonl"
+          : > "$entries_file"
 
           for service in "${services[@]}"; do
             source="bike-rental/$service:$IMAGE_TAG"
@@ -165,4 +169,68 @@ jobs:
             docker image inspect "$source" >/dev/null
             docker tag "$source" "$target"
             docker push "$target"
+          
+            # Select the digest for this repository, not another tag on the image.
+            repository_uri="$registry_prefix/$service"
+          
+            image_ref="$(
+              docker image inspect "$target" |
+                jq -er --arg prefix "$repository_uri@" '
+                  [
+                    .[0].RepoDigests[]?
+                    | select(startsWith($prefix))
+                  ]
+                  | unique
+                  | if length == 1 then .[0]
+                    else error("Expected exactly one repository digest")
+                    end
+                '
+            )"
+          
+            digest="${image_ref##*@}"
+          
+            if [[ ! "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+              printf 'Invalid digest for %s: %s\n' "$service" "$digest" >&2
+              exit 1
+            fi
+          
+            jq -cn \
+              --arg service "$service" \
+              --arg tag "$target" \
+              --arg image "$image_ref" \
+              '{service: $service, tag: $tag, image: $image}' \
+              >> "$entries_file"
           done
+          
+          jq -s \
+            --arg repository "$REPOSITORY" \
+            --arg commit "$IMAGE_TAG" \
+            --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg run_url \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            '
+              if length != 6 or ([.[].service] | unique | length) != 6
+              then error("Expected six distinct service images")
+              else {
+                schemaVersion: 1,
+                repository: $repository,
+                commit: $commit,
+                createdAt: $created_at,
+                workflowRun: $run_url,
+                runAttempt: $run_attempt,
+                images: .
+              }
+              end
+            ' "$entries_file" > build/release/release-manifest.json
+            
+          cat build/release/release-manifest.json
+
+      - name: Upload release manifest
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-manifest-${{ github.sha }}-${{ github.run_attempt }}
+          retention-days: 30
+          if-no-files-found: error
+          path: build/release/release-manifest.json
