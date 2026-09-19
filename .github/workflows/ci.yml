@@ -48,7 +48,9 @@ jobs:
           docker compose version
 
       - name: Check Bash syntax
-        run: bash -n ops/pipeline.sh
+        run: |
+          bash -n ops/pipeline.sh
+          bash -n ops/scan-images.sh
 
       - name: Verify services
         run: |
@@ -101,6 +103,18 @@ jobs:
 
       - name: Build Docker images
         run: bash ops/pipeline.sh images ${{ github.sha }}
+
+      - name: Scan Docker images
+        run: bash ops/scan-images.sh "${{ github.sha }}"
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-reports-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: build/security/
 
       - name: Run E2E tests
         run: bash ops/pipeline.sh e2e ${{ github.sha }}

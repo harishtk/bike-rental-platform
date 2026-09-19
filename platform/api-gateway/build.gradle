@@ -7,6 +7,16 @@ plugins {
 group = 'com.bikerental.gateway'
 version = '0.0.1-SNAPSHOT'
 
+// Security overrides; revisit when upgrading Spring Boot and Spring Cloud.
+ext['httpcore5.version'] = '5.4.3'
+ext['netty.version'] = '4.1.137.Final'
+
+dependencyManagement {
+    dependencies {
+        dependency 'org.bouncycastle:bcprov-jdk18on:1.85'
+    }
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-security'
