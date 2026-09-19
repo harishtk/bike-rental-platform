@@ -7,9 +7,21 @@ plugins {
 group = "com.bikerental.bike"
 version = "0.0.1-SNAPSHOT"
 
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+// Security overrides; revisit when upgrading Spring Boot and Spring Cloud.
+ext['httpcore5.version'] = '5.4.3'
+ext['tomcat.version'] = '10.1.59'
+ext['postgresql.version'] = '42.7.12'
+
+dependencyManagement {
+    dependencies {
+        dependency 'org.bouncycastle:bcprov-jdk18on:1.85'
     }
 }
 

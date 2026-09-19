@@ -48,7 +48,9 @@ jobs:
           docker compose version
 
       - name: Check Bash syntax
-        run: bash -n ops/pipeline.sh
+        run: |
+          bash -n ops/pipeline.sh
+          bash -n ops/scan-images.sh
 
       - name: Verify services
         run: |
@@ -78,6 +80,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
+    permissions:
+      contents: read
+      packages: write
+
     defaults:
       run:
         shell: bash
@@ -102,6 +108,18 @@ jobs:
       - name: Build Docker images
         run: bash ops/pipeline.sh images ${{ github.sha }}
 
+      - name: Scan Docker images
+        run: bash ops/scan-images.sh "${{ github.sha }}"
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-reports-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: build/security/
+
       - name: Run E2E tests
         run: bash ops/pipeline.sh e2e ${{ github.sha }}
 
@@ -113,3 +131,38 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
           path: build/pipeline/bike-ci-*/
+
+      - name: Publish tested images to GHCR
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          REPOSITORY: ${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+
+          printf '%s' "$GHCR_TOKEN" |
+            docker login ghcr.io \
+              --username "$GHCR_USER" \
+              --password-stdin
+
+          registry_prefix="ghcr.io/${REPOSITORY,,}"
+
+          services=(
+            auth-service
+            bike-service
+            reservation-service
+            rental-service
+            discovery-service
+            api-gateway
+          )
+
+          for service in "${services[@]}"; do
+            source="bike-rental/$service:$IMAGE_TAG"
+            target="$registry_prefix/$service:$IMAGE_TAG"
+
+            docker image inspect "$source" >/dev/null
+            docker tag "$source" "$target"
+            docker push "$target"
+          done

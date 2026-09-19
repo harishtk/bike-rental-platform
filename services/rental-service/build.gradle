@@ -7,6 +7,18 @@ plugins {
 group = 'com.bikerental.rental'
 version = '0.0.1-SNAPSHOT'
 
+// Security updates identified by the container scan.
+// Revisit these overrides when upgrading Spring Boot and Spring Cloud.
+ext['httpcore5.version'] = '5.4.3'
+ext['tomcat.version'] = '10.1.59'
+ext['postgresql.version'] = '42.7.12'
+
+dependencyManagement {
+    dependencies {
+        dependency 'org.bouncycastle:bcprov-jdk18on:1.85'
+    }
+}
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
