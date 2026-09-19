@@ -119,7 +119,8 @@ class BikeReservationRetryTest extends AbstractPostgresIntegrationTest {
                                 + "/reserve",
                         Map.of(),
                         null,
-                        StandardCharsets.UTF_8
+                        StandardCharsets.UTF_8,
+                        new RequestTemplate()
                 );
 
         Response response =

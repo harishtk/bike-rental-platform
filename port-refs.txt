@@ -1,2 +1,10 @@
 bike-service        : 8000
 reservation-service : 8001
+rental-service      : 8002
+auth-service        : 8003
+discovery-service   : 8761
+api-gateway         : 8080
+bike-db             : 5432
+rental-db           : 5431
+auth-db             : 5434
+kafka               : 9092
