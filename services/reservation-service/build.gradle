@@ -51,4 +51,11 @@ dependencies {
 
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.addAll([
+            '-Xlint:deprecation',
+            '-Xlint:unchecked'
+    ])
+}
+
 apply from: "${projectDir}/jacoco.gradle"

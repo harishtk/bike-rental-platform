@@ -11,6 +11,7 @@ import com.bikerental.reservation.application.reservation.ReservationExpirationS
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -26,13 +27,14 @@ import com.bikerental.reservation.domain.reservation.ReservationStatus;
 import com.bikerental.reservation.infrastructure.persistence.reservation.SpringDataReservationRepository;
 
 @Testcontainers
+@ActiveProfiles("test")
 @SpringBootTest(
         classes = {ReservationServiceApplication.class},
         properties = {
                 "outbox.publisher.enabled=false",
-                "resilience4j.retry.instances.bikeService.maxAttempts=2",
-                "resilience4j.retry.instances.bikeService.waitDuration=1ms",
-                "resilience4j.circuitbreaker.instances.bikeService.minimumNumberOfCalls=100"
+                "resilience4j.retry.instances.bike-service.maxAttempts=2",
+                "resilience4j.retry.instances.bike-service.waitDuration=1ms",
+                "resilience4j.circuitbreaker.instances.bike-service.minimumNumberOfCalls=100"
         }
 )
 class ReservationExpirationIntegrationTest {
@@ -80,7 +82,7 @@ class ReservationExpirationIntegrationTest {
         );
 
         registry.add(
-                "clients.bike-service.url",
+                "spring.cloud.openfeign.client.config.bike-service.url",
                 () -> "http://localhost:" + wireMockServer.port()
         );
 
