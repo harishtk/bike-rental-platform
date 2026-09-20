@@ -5,7 +5,11 @@ plugins {
 }
 
 group = 'com.bikerental.gateway'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.2-SNAPSHOT'
+
+springBoot {
+    buildInfo()
+}
 
 // Security overrides; revisit when upgrading Spring Boot and Spring Cloud.
 ext['httpcore5.version'] = '5.4.3'
