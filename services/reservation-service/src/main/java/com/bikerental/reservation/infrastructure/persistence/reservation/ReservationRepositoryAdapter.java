@@ -46,9 +46,12 @@ public class ReservationRepositoryAdapter
     }
 
     @Override
-    public Optional<Reservation> findById(UUID reservationId) {
+    public Optional<Reservation> findByIdAndUserId(
+            UUID reservationId,
+            UUID userId
+    ) {
 
-        return repository.findById(reservationId)
+        return repository.findByIdAndUserId(reservationId, userId)
                 .map(mapper::toDomain);
     }
 
@@ -78,8 +81,8 @@ public class ReservationRepositoryAdapter
     }
 
     @Override
-    public List<Reservation> allReservations() {
-        return repository.findAll().stream()
+    public List<Reservation> findByUserId(UUID userId) {
+        return repository.findByUserId(userId).stream()
                 .map(mapper::toDomain)
                 .toList();
     }

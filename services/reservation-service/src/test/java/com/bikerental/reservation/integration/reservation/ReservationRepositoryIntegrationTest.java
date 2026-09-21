@@ -11,11 +11,9 @@ import org.springframework.test.context.jdbc.Sql;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatException;
 
 @ActiveProfiles("test")
 @Sql(
@@ -48,7 +46,7 @@ public class ReservationRepositoryIntegrationTest extends
         assertThat(saved.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
 
         Reservation retrieved = reservationRepository
-                .findById(saved.getId())
+                .findByIdAndUserId(saved.getId(), saved.getUserId())
                 .orElseThrow();
 
         assertThat(retrieved.getUserId()).isEqualTo(userId);
@@ -59,34 +57,32 @@ public class ReservationRepositoryIntegrationTest extends
 
     @Test
     void shouldReturn404WhenReservationDoesNotExist() {
+        UUID userId = UUID.randomUUID();
         UUID reservationId = UUID.randomUUID();
 
-        assertThat(reservationRepository.findById(reservationId)).isEmpty();
+        assertThat(reservationRepository.findByIdAndUserId(reservationId, userId)).isEmpty();
     }
 
     @Test
-    void shouldFindAllReservations() {
-        reservationRepository.save(
-                Reservation.create(
-                        UUID.randomUUID(),
-                        UUID.randomUUID(),
-                        UUID.randomUUID(),
-                        Duration.ofDays(7)
-                )
-        );
+    void shouldFindOnlyReservationsForUserIncludingHistory() {
+        UUID userId = UUID.randomUUID();
+        Reservation previous = Reservation.create(
+                userId, UUID.randomUUID(), UUID.randomUUID(), Duration.ofDays(7));
+        previous.cancel(Instant.now());
+        Reservation cancelled = reservationRepository.save(previous);
+        Reservation active = reservationRepository.save(Reservation.create(
+                userId, UUID.randomUUID(), UUID.randomUUID(), Duration.ofDays(2)));
+        Reservation other = reservationRepository.save(Reservation.create(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Duration.ofDays(2)));
 
-        reservationRepository.save(
-                Reservation.create(
-                        UUID.randomUUID(),
-                        UUID.randomUUID(),
-                        UUID.randomUUID(),
-                        Duration.ofDays(2)
-                )
-        );
-        List<Reservation> reservations = reservationRepository.allReservations();
-
-        assertThat(reservations)
-                .hasSize(2);
+        assertThat(reservationRepository.findByUserId(userId))
+                .extracting(Reservation::getId)
+                .containsExactlyInAnyOrder(cancelled.getId(), active.getId());
+        assertThat(reservationRepository.findByUserId(other.getUserId()))
+                .extracting(Reservation::getId).containsExactly(other.getId());
+        assertThat(reservationRepository.findByUserId(UUID.randomUUID())).isEmpty();
+        assertThat(reservationRepository.findByIdAndUserId(active.getId(), other.getUserId()))
+                .isEmpty();
     }
 
     @Test

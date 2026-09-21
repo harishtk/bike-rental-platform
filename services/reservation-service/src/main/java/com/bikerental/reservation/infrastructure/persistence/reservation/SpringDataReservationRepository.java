@@ -2,6 +2,7 @@ package com.bikerental.reservation.infrastructure.persistence.reservation;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,8 @@ public interface SpringDataReservationRepository
             ReservationStatus status,
             Instant expiresAt
     );
+
+    Optional<ReservationEntity> findByIdAndUserId(UUID id, UUID userId);
+
+    List<ReservationEntity> findByUserId(UUID userId);
 }

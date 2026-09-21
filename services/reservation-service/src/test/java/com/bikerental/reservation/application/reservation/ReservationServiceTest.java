@@ -19,6 +19,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import java.util.Optional;
+import com.bikerental.reservation.domain.reservation.InvalidReservationStateException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -261,5 +263,37 @@ class ReservationServiceTest {
 
         verify(bikeReservationGateway)
                 .releaseBike(eq(bikeId), any(UUID.class));
+    }
+
+    @Test
+    void shouldRejectUnownedCancellationBeforeAnySideEffects() {
+        UUID reservationId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        when(reservationRepository.findByIdAndUserId(reservationId, customerId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reservationService.cancelReservation(reservationId, customerId))
+                .isInstanceOf(ReservationNotFoundException.class);
+
+        verify(reservationRepository).findByIdAndUserId(reservationId, customerId);
+        verifyNoMoreInteractions(reservationRepository);
+        verifyNoInteractions(bikeReservationGateway, outboxEventRepository, reservationOutboxEventFactory);
+    }
+
+    @Test
+    void shouldRejectInactiveCancellationBeforeReleasingBike() {
+        Reservation reservation = Reservation.create(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), Duration.ofHours(24));
+        reservation.cancel(Instant.now(clock));
+        when(reservationRepository.findByIdAndUserId(reservation.getId(), reservation.getUserId()))
+                .thenReturn(Optional.of(reservation));
+
+        assertThatThrownBy(() -> reservationService.cancelReservation(
+                reservation.getId(), reservation.getUserId()))
+                .isInstanceOf(InvalidReservationStateException.class);
+
+        verify(reservationRepository).findByIdAndUserId(reservation.getId(), reservation.getUserId());
+        verifyNoMoreInteractions(reservationRepository);
+        verifyNoInteractions(bikeReservationGateway, outboxEventRepository, reservationOutboxEventFactory);
     }
 }

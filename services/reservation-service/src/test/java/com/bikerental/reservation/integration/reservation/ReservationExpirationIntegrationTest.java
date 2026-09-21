@@ -47,7 +47,7 @@ class ReservationExpirationIntegrationTest {
                     .withPassword("reservation");
 
     private static final WireMockServer wireMockServer =
-            new WireMockServer(8000);
+            new WireMockServer(0);
 
     @Autowired
     private ReservationRepository reservationRepository;
@@ -65,6 +65,9 @@ class ReservationExpirationIntegrationTest {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
+        if (!wireMockServer.isRunning()) {
+            wireMockServer.start();
+        }
 
         registry.add(
                 "spring.datasource.url",
@@ -90,11 +93,6 @@ class ReservationExpirationIntegrationTest {
                 "reservation.expiration.fixed-delay",
                 () -> "3600000"
         );
-    }
-
-    @BeforeAll
-    static void startWireMock() {
-        wireMockServer.start();
     }
 
     @AfterAll
@@ -163,7 +161,7 @@ class ReservationExpirationIntegrationTest {
 
         Reservation persisted =
                 reservationRepository
-                        .findById(reservationId)
+                        .findByIdAndUserId(reservationId, userId)
                         .orElseThrow();
 
         assertThat(persisted.getStatus())
@@ -207,7 +205,7 @@ class ReservationExpirationIntegrationTest {
 
         Reservation persisted =
                 reservationRepository
-                        .findById(reservationId)
+                        .findByIdAndUserId(reservationId, userId)
                         .orElseThrow();
 
         assertThat(persisted.getStatus())
@@ -254,7 +252,7 @@ class ReservationExpirationIntegrationTest {
 
         Reservation persisted =
                 reservationRepository
-                        .findById(reservationId)
+                        .findByIdAndUserId(reservationId, userId)
                         .orElseThrow();
 
         assertThat(persisted.getStatus())
@@ -298,7 +296,7 @@ class ReservationExpirationIntegrationTest {
 
         Reservation persisted =
                 reservationRepository
-                        .findById(reservationId)
+                        .findByIdAndUserId(reservationId, userId)
                         .orElseThrow();
 
         assertThat(persisted.getStatus())
@@ -352,7 +350,7 @@ class ReservationExpirationIntegrationTest {
 
         Reservation persisted =
                 reservationRepository
-                        .findById(reservationId)
+                        .findByIdAndUserId(reservationId, userId)
                         .orElseThrow();
 
         assertThat(persisted.getStatus())
@@ -437,12 +435,12 @@ class ReservationExpirationIntegrationTest {
 
         Reservation persistedFirst =
                 reservationRepository
-                        .findById(reservationId)
+                        .findByIdAndUserId(reservationId, userId)
                         .orElseThrow();
 
         Reservation persistedSecond =
                 reservationRepository
-                        .findById(secondReservationId)
+                        .findByIdAndUserId(secondReservationId, secondReservation.getUserId())
                         .orElseThrow();
 
         assertThat(persistedFirst.getStatus())

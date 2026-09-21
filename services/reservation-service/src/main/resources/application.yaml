@@ -33,6 +33,13 @@ spring:
     default-schema: reservation
     create-schemas: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER:http://auth-service:8003}
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8003/.well-known/jwks.json}
+
 logging:
   level:
     root: INFO

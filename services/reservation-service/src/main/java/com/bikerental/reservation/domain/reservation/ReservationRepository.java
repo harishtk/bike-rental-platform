@@ -11,7 +11,7 @@ public interface ReservationRepository {
 
     void flush();
 
-    Optional<Reservation> findById(UUID reservationId);
+    Optional<Reservation> findByIdAndUserId(UUID reservationId, UUID userId);
 
     boolean existsByUserIdAndStatus(
             UUID userId,
@@ -22,5 +22,5 @@ public interface ReservationRepository {
             Instant currentTime
     );
 
-    List<Reservation> allReservations();
+    List<Reservation> findByUserId(UUID userId);
 }
