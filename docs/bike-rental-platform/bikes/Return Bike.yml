@@ -1,0 +1,27 @@
+info:
+  name: Return Bike
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{BASE_URL}}/<bikeId>/return"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: X-Idempotency-Key
+      value: f2e5ac7a-7ac7-4505-99ec-fbe99709533a
+  body:
+    type: json
+    data: |-
+      {
+        "stationId": "{{stationId1}}"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -210,7 +210,8 @@ function Invoke-EndToEndTests {
                         -Uri "$gatewayUrl$($route.Path)" `
                         -Method $route.Method `
                         -Headers $headers `
-                        -TimeoutSec 5
+                        -TimeoutSec 5 `
+                        -Verbose
 
                 if ($response.StatusCode -ne 200) {
                     throw "Unexpected status: $($response.StatusCode)"

@@ -138,7 +138,7 @@ public class ReservationConcurrencyIntegrationTest {
 
         List<Reservation> activeReservations =
                 reservationRepository
-                        .allReservations()
+                        .findByUserId(userId)
                         .stream()
                         .filter(reservation -> reservation.getStatus() == ReservationStatus.ACTIVE)
                         .toList();
@@ -202,9 +202,8 @@ public class ReservationConcurrencyIntegrationTest {
         assertThat(failureCount).isEqualTo(1);
 
         List<Reservation> activeReservations =
-                reservationRepository
-                        .allReservations()
-                        .stream()
+                Stream.of(firstUserId, secondUserId)
+                        .flatMap(id -> reservationRepository.findByUserId(id).stream())
                         .filter(reservation -> reservation.getStatus() == ReservationStatus.ACTIVE)
                         .toList();
         assertThat(activeReservations).hasSize(1);
@@ -249,7 +248,7 @@ public class ReservationConcurrencyIntegrationTest {
         );
 
         assertThat(newReservation.getStatus()).isEqualTo(ReservationStatus.ACTIVE);
-        assertThat(reservationRepository.allReservations()).hasSize(2);
+        assertThat(reservationRepository.findByUserId(userId)).hasSize(2);
     }
 
     @Test
@@ -261,8 +260,11 @@ public class ReservationConcurrencyIntegrationTest {
 
         UUID stationId = UUID.randomUUID();
 
+        CyclicBarrier bothRequestsReserved = new CyclicBarrier(2);
         when(bikeReservationGateway.reserveBike(any(), any(UUID.class)))
                 .thenAnswer(invocation -> {
+                    // Both requests must pass the eligibility check before either can save.
+                    bothRequestsReserved.await(5, TimeUnit.SECONDS);
                     UUID bikeId = invocation.getArgument(0);
                     return new BikeReservationDetails(bikeId, stationId);
                 });

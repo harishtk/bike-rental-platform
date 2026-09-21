@@ -5,6 +5,7 @@ import com.bikerental.reservation.application.bike.BikeReservationGateway;
 import com.bikerental.reservation.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -14,12 +15,16 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
+import com.bikerental.reservation.domain.reservation.ReservationRepository;
+import com.bikerental.reservation.domain.reservation.ReservationStatus;
+import com.bikerental.reservation.infrastructure.persistence.outbox.SpringDataOutboxEventRepository;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import static com.jayway.jsonpath.JsonPath.read;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -33,19 +38,29 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ReservationControllerIntegrationTest extends
         AbstractPostgresIntegrationTest {
 
+    private static RequestPostProcessor asCustomer(UUID userId) {
+        return jwt().jwt(token -> token.subject(userId.toString()));
+    }
+
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ReservationRepository reservationRepository;
+
+    @Autowired
+    private SpringDataOutboxEventRepository outboxRepository;
 
     @MockitoBean
     private BikeReservationGateway bikeReservationGateway;
 
     @Test
     void shouldCreateReservation() throws Exception {
+        UUID userId = UUID.randomUUID();
         UUID bikeId = prepareBikeReservationMock();
 
         String request = """
                 {
-                    "userId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24",
                     "bikeId": "%s",
                     "durationHours": 48
                 }
@@ -53,6 +68,7 @@ public class ReservationControllerIntegrationTest extends
 
         mockMvc.perform(
                         post("/api/v1/reservations")
+                                .with(asCustomer(userId))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(request)
                 )
@@ -66,10 +82,10 @@ public class ReservationControllerIntegrationTest extends
 
     @Test
     void shouldGetReservationById() throws Exception {
+        UUID userId = UUID.randomUUID();
         UUID bikeId = prepareBikeReservationMock();
         String request = """
                 {
-                    "userId": "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24",
                     "bikeId": "%s",
                     "durationHours": 48
                 }
@@ -77,6 +93,7 @@ public class ReservationControllerIntegrationTest extends
 
         String response = mockMvc.perform(
                         post("/api/v1/reservations")
+                                .with(asCustomer(userId))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(request)
                 )
@@ -89,6 +106,7 @@ public class ReservationControllerIntegrationTest extends
 
         mockMvc.perform(
                         get("/api/v1/reservations/{reservationId}", reservationId)
+                                .with(asCustomer(userId))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(
@@ -99,48 +117,62 @@ public class ReservationControllerIntegrationTest extends
 
     @Test
     void shouldReturn404WhenReservationDoesNotExist() throws Exception {
+        UUID userId = UUID.randomUUID();
         mockMvc.perform(
                         get("/api/v1/reservations/{reservationId}", UUID.randomUUID())
+                                .with(asCustomer(userId))
                 )
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void shouldGetAllReservations() throws Exception {
+    void shouldGetOnlyOwnedReservations() throws Exception {
+        UUID firstUserId = UUID.randomUUID();
+        UUID secondUserId = UUID.randomUUID();
         when(bikeReservationGateway.reserveBike(ArgumentMatchers.any(UUID.class), ArgumentMatchers.any(UUID.class)))
             .thenReturn(new BikeReservationDetails(UUID.randomUUID(), UUID.randomUUID()));
 
         String id1 = createReservation(
-                UUID.randomUUID(),
+                firstUserId,
                 UUID.randomUUID(),
                 48
         );
         String id2 = createReservation(
-                UUID.randomUUID(),
+                secondUserId,
                 UUID.randomUUID(),
                 36
         );
 
         mockMvc.perform(
                 get("/api/v1/reservations")
+                        .with(asCustomer(firstUserId))
         )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[*].id", hasItems(id1, id2)));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[*].id", hasItems(id1)));
+
+        mockMvc.perform(
+                        get("/api/v1/reservations")
+                                .with(asCustomer(secondUserId))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[*].id", hasItems(id2)));
 
     }
 
     @Test
-    void shouldRejectInvalidStation() throws Exception {
+    void shouldRejectInvalidReservationRequest() throws Exception {
+        UUID userId = UUID.randomUUID();
         String request = """
                 {
-                    "userId": "",
                     "bikeId": "",
                     "durationHours": 0
                 }
                 """;
         mockMvc.perform(
                         post("/api/v1/reservations")
+                                .with(asCustomer(userId))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(request)
                 )
@@ -151,31 +183,73 @@ public class ReservationControllerIntegrationTest extends
                 ))
                 .andExpect(jsonPath(
                         "$.data",
-                        hasSize(3)
+                        hasSize(2)
                 ));
 
     }
 
     @Test
     void shouldCancelAValidReservation() throws Exception {
+        UUID userId =  UUID.randomUUID();
         UUID bikeId = prepareBikeReservationMock();
 
         doNothing().when(bikeReservationGateway).releaseBike(eq(bikeId), ArgumentMatchers.any(UUID.class));
 
         String reservationId = createReservation(
-                UUID.randomUUID(),
+                userId,
                 bikeId,
                 48
         );
 
         mockMvc.perform(
                 post("/api/v1/reservations/{reservationId}/cancel", reservationId)
+                        .with(asCustomer(userId))
         )
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath(
                         "$.status",
                         is("CANCELLED")
                 ));
+    }
+
+    @Test
+    void shouldRejectCreationWithoutToken() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/reservations")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                        "bikeId": "%s",
+                                        "durationHours": 48
+                                    }
+                                    """.formatted(UUID.randomUUID()))
+                )
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(bikeReservationGateway);
+    }
+
+    @Test
+    void shouldUseTokenOwnerInsteadOfBodyUserId() throws Exception {
+        UUID authenticatedUser = UUID.randomUUID();
+        UUID anotherUser = UUID.randomUUID();
+        UUID bikeId = prepareBikeReservationMock();
+
+        mockMvc.perform(
+                        post("/api/v1/reservations")
+                                .with(asCustomer(authenticatedUser))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                        "userId": "%s",
+                                        "bikeId": "%s",
+                                        "durationHours": 48
+                                    }
+                                    """.formatted(anotherUser, bikeId))
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.userId")
+                        .value(authenticatedUser.toString()));
     }
 
     @Test
@@ -187,22 +261,85 @@ public class ReservationControllerIntegrationTest extends
         createReservation(userId, bikeA, 12);
         String request = """
                 {
-                    "userId": "%s",
                     "bikeId": "%s",
                     "durationHours": %d
                 }
                 """.formatted(
-                userId,
                 bikeB,
                 12
         );
 
         mockMvc.perform(
                 post("/api/v1/reservations")
+                        .with(asCustomer(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(request)
         )
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldReturnEmptyListForCustomerWithoutReservations() throws Exception {
+        createReservation(UUID.randomUUID(), prepareBikeReservationMock(), 48);
+
+        mockMvc.perform(get("/api/v1/reservations")
+                        .with(asCustomer(UUID.randomUUID())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    void shouldHideAnotherCustomersReservation() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String id = createReservation(owner, prepareBikeReservationMock(), 48);
+
+        mockMvc.perform(get("/api/v1/reservations/{id}", id)
+                        .with(asCustomer(UUID.randomUUID())))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/v1/reservations/{id}", id)
+                        .with(asCustomer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(owner.toString()));
+    }
+
+    @Test
+    void shouldRejectForeignCancellationWithoutSideEffects() throws Exception {
+        UUID owner = UUID.randomUUID();
+        String id = createReservation(owner, prepareBikeReservationMock(), 48);
+        long eventCount = outboxRepository.count();
+        clearInvocations(bikeReservationGateway);
+
+        mockMvc.perform(post("/api/v1/reservations/{id}/cancel", id)
+                        .with(asCustomer(UUID.randomUUID())))
+                .andExpect(status().isNotFound());
+
+        verifyNoInteractions(bikeReservationGateway);
+        assertThat(reservationRepository.findByIdAndUserId(UUID.fromString(id), owner)
+                .orElseThrow().getStatus()).isEqualTo(ReservationStatus.ACTIVE);
+        assertThat(outboxRepository.count()).isEqualTo(eventCount);
+    }
+
+    @Test
+    void shouldRejectMissingCancellationWithoutSideEffects() throws Exception {
+        long eventCount = outboxRepository.count();
+        mockMvc.perform(post("/api/v1/reservations/{id}/cancel", UUID.randomUUID())
+                        .with(asCustomer(UUID.randomUUID())))
+                .andExpect(status().isNotFound());
+        verifyNoInteractions(bikeReservationGateway);
+        assertThat(outboxRepository.count()).isEqualTo(eventCount);
+    }
+
+    @Test
+    void shouldRequireAuthenticationForReadsAndCancellation() throws Exception {
+        String id = createReservation(UUID.randomUUID(), prepareBikeReservationMock(), 48);
+        clearInvocations(bikeReservationGateway);
+        mockMvc.perform(get("/api/v1/reservations")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/reservations/{id}", id))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/reservations/{id}/cancel", id))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(bikeReservationGateway);
     }
 
     private String createReservation(
@@ -212,23 +349,23 @@ public class ReservationControllerIntegrationTest extends
     ) throws Exception {
         String request = """
                 {
-                    "userId": "%s",
                     "bikeId": "%s",
                     "durationHours": %d
                 }
                 """.formatted(
-                userId,
                 bikeId,
                 durationHours
         );
 
         String response = mockMvc.perform(
                         post("/api/v1/reservations")
+                                .with(asCustomer(userId))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(request)
                 )
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("location"))
+                .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

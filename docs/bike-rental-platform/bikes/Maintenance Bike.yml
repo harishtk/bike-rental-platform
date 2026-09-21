@@ -1,0 +1,19 @@
+info:
+  name: Maintenance Bike
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{BASE_URL}}/<bikeId>/maintenance"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

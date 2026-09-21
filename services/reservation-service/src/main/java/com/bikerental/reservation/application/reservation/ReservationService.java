@@ -8,10 +8,6 @@ import java.util.UUID;
 
 import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
-import com.bikerental.reservation.application.messaging.EventEnvelope;
-import com.bikerental.reservation.application.outbox.EventPayloadSerializer;
-import com.bikerental.reservation.application.reservation.event.ReservationCreatedEvent;
-import com.bikerental.reservation.application.reservation.event.ReservationEventTypes;
 import com.bikerental.reservation.application.reservation.event.ReservationOutboxEventFactory;
 import com.bikerental.reservation.domain.outbox.OutboxEvent;
 import com.bikerental.reservation.domain.outbox.OutboxEventRepository;
@@ -84,23 +80,26 @@ public class ReservationService {
     }
 
     @Transactional(readOnly = true)
-    public Reservation getReservation(UUID reservationId) {
+    public Reservation getReservation(UUID reservationId, UUID userId) {
 
-        return reservationRepository.findById(reservationId)
+        return reservationRepository
+                .findByIdAndUserId(reservationId, userId)
                 .orElseThrow(() ->
                         new ReservationNotFoundException(reservationId)
                 );
     }
 
     @Transactional(readOnly = true)
-    public List<Reservation> allReservations() {
-        return reservationRepository.allReservations();
+    public List<Reservation> getReservations(UUID userId) {
+        return reservationRepository.findByUserId(userId);
     }
 
     @Transactional
-    public Reservation cancelReservation(UUID reservationId) {
+    public Reservation cancelReservation(UUID reservationId, UUID userId) {
 
-        Reservation reservation = getReservation(reservationId);
+        Reservation reservation = getReservation(reservationId, userId);
+
+        reservation.cancel(Instant.now(clock));
 
         UUID releaseOperationId = UUID.randomUUID();
 
@@ -108,8 +107,6 @@ public class ReservationService {
                 reservation.getBikeId(),
                 releaseOperationId
         );
-
-        reservation.cancel(Instant.now(clock));
 
         Reservation savedReservation = reservationRepository.save(reservation);
 

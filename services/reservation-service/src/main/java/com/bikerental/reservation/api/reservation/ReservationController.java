@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,12 +33,14 @@ public class ReservationController {
     public ResponseEntity<ReservationResponse> createReservation(
             @Valid @RequestBody
             CreateReservationRequest request,
+            @AuthenticationPrincipal Jwt jwt,
             UriComponentsBuilder uriBuilder
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
 
         Reservation reservation =
                 reservationService.createReservation(
-                        request.userId(),
+                        userId,
                         request.bikeId(),
                         Duration.ofHours(request.durationHours())
                 );
@@ -48,8 +52,12 @@ public class ReservationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ReservationResponse>> getReservations() {
-        List<ReservationResponse> reservations = reservationService.allReservations()
+    public ResponseEntity<List<ReservationResponse>> getReservations(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID userId =  UUID.fromString(jwt.getSubject());
+
+        List<ReservationResponse> reservations = reservationService.getReservations(userId)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
@@ -59,20 +67,26 @@ public class ReservationController {
 
     @GetMapping("/{reservationId}")
     public ResponseEntity<ReservationResponse> getReservation(
-            @PathVariable UUID reservationId
+            @PathVariable UUID reservationId,
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
         Reservation reservation =
-                reservationService.getReservation(reservationId);
+                reservationService.getReservation(reservationId, userId);
 
         return ResponseEntity.ok(mapper.toResponse(reservation));
     }
 
     @PostMapping("/{reservationId}/cancel")
     public ResponseEntity<ReservationResponse> cancelReservation(
-            @PathVariable UUID reservationId
+            @PathVariable UUID reservationId,
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
         Reservation reservation =
-                reservationService.cancelReservation(reservationId);
+                reservationService.cancelReservation(reservationId, userId);
 
         return ResponseEntity.accepted().body(mapper.toResponse(reservation));
     }

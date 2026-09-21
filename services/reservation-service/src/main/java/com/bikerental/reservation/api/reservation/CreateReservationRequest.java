@@ -8,9 +8,6 @@ import java.util.UUID;
 public record CreateReservationRequest(
 
         @NotNull
-        UUID userId,
-
-        @NotNull
         UUID bikeId,
 
         @Positive

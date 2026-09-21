@@ -1205,12 +1205,19 @@ Station
 MaintenanceRecord
 ```
 
-## Rental Service
+## Reservation Service
 
 Owns:
 
 ```text
 Reservation
+```
+
+## Rental Service
+
+Owns:
+
+```text
 Rental
 PricingRule
 ```
@@ -1239,7 +1246,7 @@ Each business entity has one authoritative service:
 User          -> User Service
 Bike          -> Bike Service
 Station       -> Bike Service
-Reservation   -> Rental Service
+Reservation   -> Reservation Service
 Rental        -> Rental Service
 PricingRule   -> Rental Service
 Payment       -> Payment Service
@@ -1293,3 +1300,36 @@ Advanced analytics
 ```
 
 These can be added later without changing the fundamental rental concept.
+
+# 31. Customer Ownership — Planned Implementation
+
+Status: these ownership checks are required but are not implemented yet.
+Reservation and Rental remain separate service-owned entities as described above.
+
+The current local identity provider is auth-service. Its signed JWT subject is the
+customer UUID. Both reservation-service and rental-service should validate bearer
+tokens, including calls made directly to their ports. Creation must derive userId
+from the validated token rather than trusting request JSON or identity headers.
+Remove userId from the public creation request contracts.
+
+Reservation lists must contain only the authenticated customer's records, filtered
+by userId in the database. Reservation detail and cancellation, and rental return,
+must verify ownership before changing state, calling another service, or writing
+an outbox event. Return 404 for both missing records and records owned by another
+customer to avoid disclosing their existence. Unauthenticated requests return 401.
+Health probes remain public. Customer endpoints have no implicit operator/admin
+ownership override.
+
+Reservation expiration remains a system operation independent of customer tokens.
+The current rental completion endpoint needs a separate authorization policy:
+financial settlement must ultimately be driven by a trusted payment/system workflow,
+not by a customer asserting that payment has completed.
+
+Verification must cover two different authenticated customers, forged body userId,
+unauthenticated direct requests, owner-only lists, and rejected cross-customer reads
+and mutations with no downstream calls, database changes, or outbox writes.
+
+Separate gaps remain: reservation-to-rental conversion, preventing rental of another
+customer's reserved bike, customer eligibility across the service boundary, payment
+integration, and authorization of internal bike commands. Customer ownership alone
+does not implement these workflows.
