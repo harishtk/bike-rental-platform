@@ -1,0 +1,28 @@
+info:
+  name: Create Rental
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{BASE_URL}}/rentals"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "userId": "<user-id-here>",
+        "bikeId": "<bike-id-here>",
+        "stationId": "<station-id-here>",
+        "dailyRate": 24.50
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

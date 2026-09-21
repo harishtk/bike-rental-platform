@@ -1,0 +1,19 @@
+info:
+  name: Cancel Reservation
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{BASE_URL}}/reservations/<reservation-id-here>/cancel"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

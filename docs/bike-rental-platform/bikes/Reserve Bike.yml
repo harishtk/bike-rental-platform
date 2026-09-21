@@ -1,0 +1,21 @@
+info:
+  name: Reserve Bike
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{BASE_URL}}/<bikeId>/reserve"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: X-Idempotency-Key
+      value: f2e5ac7a-7ac7-4505-99ec-fbe99709533a
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
