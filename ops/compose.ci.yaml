@@ -75,6 +75,9 @@ services:
       EUREKA_URL: http://discovery-service:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
 
+      JWT_ISSUER: http://auth-service:8003
+      JWT_JWK_SET_URI: http://auth-service:8003/.well-known/jwks.json
+
       OUTBOX_PUBLISHER_ENABLED: "true"
 
     depends_on:
@@ -85,6 +88,8 @@ services:
       bike-service:
         condition: service_healthy
       discovery-service:
+        condition: service_healthy
+      auth-service:
         condition: service_healthy
     healthcheck:
       test:
