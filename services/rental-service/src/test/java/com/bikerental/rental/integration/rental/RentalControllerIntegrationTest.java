@@ -101,18 +101,16 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
         assertThat(rentalRepository.findById(UUID.fromString(id)).orElseThrow().getVersion()).isEqualTo(1L);
         verify(bikeRentalGateway).returnBike(eq(bikeId), eq(returnStation), any(UUID.class));
 
+        // The complete endpoint is private until a trusted payment service is implemented
         mockMvc.perform(
                     post("/api/v1/rentals/{id}/complete", id)
                             .with(asCustomer(userId))
                 )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id))
-                .andExpect(jsonPath("$.status").value("COMPLETED"))
-                .andExpect(jsonPath("$.totalAmount").value(25.0));
+                .andExpect(status().isForbidden());
 
         var completed = rentalRepository.findById(UUID.fromString(id)).orElseThrow();
-        assertThat(completed.getStatus()).isEqualTo(RentalStatus.COMPLETED);
-        assertThat(completed.getVersion()).isEqualTo(2L);
+        assertThat(completed.getStatus()).isEqualTo(RentalStatus.RETURNED);
+        // assertThat(completed.getVersion()).isEqualTo(2L);
         verifyNoMoreInteractions(bikeRentalGateway);
     }
 
@@ -150,7 +148,7 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
         UUID userId = UUID.randomUUID();
         mockMvc.perform(post("/api/v1/rentals/{id}/complete", "invalid-id")
                         .with(asCustomer(userId)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden());
         verifyNoInteractions(bikeRentalGateway);
     }
 

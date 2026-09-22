@@ -391,6 +391,7 @@ public class SystemEndToEndTest {
         log.debug("Rental returned: rentalId={}, stationId={}", rentalId, stationId);
         log.info("Step 9/9: Complete rental");
 
+        // We'll keep the /complete endpoint private until a payment servie is implemented.
         given()
                 .filter(HTTP_LOGGING)
                 .baseUri(gatewayUrl)
@@ -402,15 +403,7 @@ public class SystemEndToEndTest {
                         rentalId
                 )
                 .then()
-                .statusCode(200)
-                .body(
-                        "id",
-                        equalTo(rentalId)
-                )
-                .body(
-                        "status",
-                        equalTo("COMPLETED")
-                );
+                .statusCode(403);
         log.debug("Rental completed: rentalId={}", rentalId);
         log.info("Full bike reservation and rental workflow passed in {} ms",
                 (System.nanoTime() - workflowStarted) / 1_000_000);

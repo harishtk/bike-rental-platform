@@ -21,6 +21,7 @@ public class SecurityConfiguration {
                                 "/actuator/health",
                                 "/actuator/health/**"
                         ).permitAll()
+                        .requestMatchers("/api/v1/rentals/*/complete").denyAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(Customizer.withDefaults()))
