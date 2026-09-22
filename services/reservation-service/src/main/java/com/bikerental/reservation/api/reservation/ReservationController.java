@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
+import com.bikerental.reservation.api.security.CustomerIdentity;
 import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ public class ReservationController {
             @AuthenticationPrincipal Jwt jwt,
             UriComponentsBuilder uriBuilder
     ) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = CustomerIdentity.userId(jwt);
 
         Reservation reservation =
                 reservationService.createReservation(
@@ -55,7 +56,7 @@ public class ReservationController {
     public ResponseEntity<List<ReservationResponse>> getReservations(
             @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID userId =  UUID.fromString(jwt.getSubject());
+        UUID userId =  CustomerIdentity.userId(jwt);
 
         List<ReservationResponse> reservations = reservationService.getReservations(userId)
                 .stream()
@@ -70,7 +71,7 @@ public class ReservationController {
             @PathVariable UUID reservationId,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = CustomerIdentity.userId(jwt);
 
         Reservation reservation =
                 reservationService.getReservation(reservationId, userId);
@@ -83,7 +84,7 @@ public class ReservationController {
             @PathVariable UUID reservationId,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = CustomerIdentity.userId(jwt);
 
         Reservation reservation =
                 reservationService.cancelReservation(reservationId, userId);

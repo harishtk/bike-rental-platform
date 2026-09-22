@@ -4,6 +4,9 @@ import com.bikerental.reservation.application.bike.BikeReservationDetails;
 import com.bikerental.reservation.application.bike.BikeReservationGateway;
 import com.bikerental.reservation.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -189,6 +192,39 @@ public class ReservationControllerIntegrationTest extends
     }
 
     @Test
+    void shouldRejectRepeatedCancellationWithoutSideEffects() throws Exception {
+        UUID owner = UUID.randomUUID();
+        UUID bikeId = prepareBikeReservationMock();
+        String id = createReservation(owner, bikeId, 48);
+
+        mockMvc.perform(post("/api/v1/reservations/{id}/cancel", id)
+                        .with(asCustomer(owner)))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        verify(bikeReservationGateway)
+                .releaseBike(eq(bikeId), ArgumentMatchers.any(UUID.class));
+
+        long eventCount = outboxRepository.count();
+        clearInvocations(bikeReservationGateway);
+
+        mockMvc.perform(post("/api/v1/reservations/{id}/cancel", id)
+                        .with(asCustomer(owner)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
+
+        verifyNoInteractions(bikeReservationGateway);
+
+        assertThat(reservationRepository
+                .findByIdAndUserId(UUID.fromString(id), owner)
+                .orElseThrow()
+                .getStatus())
+                .isEqualTo(ReservationStatus.CANCELLED);
+
+        assertThat(outboxRepository.count()).isEqualTo(eventCount);
+    }
+
+    @Test
     void shouldCancelAValidReservation() throws Exception {
         UUID userId =  UUID.randomUUID();
         UUID bikeId = prepareBikeReservationMock();
@@ -224,6 +260,48 @@ public class ReservationControllerIntegrationTest extends
                                     }
                                     """.formatted(UUID.randomUUID()))
                 )
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(bikeReservationGateway);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"not-a-uuid", "1-1-1-1-1"})
+    void shouldRejectInvalidCustomerIdentity(String subject) throws Exception {
+        RequestPostProcessor authentication = jwt().jwt(token ->
+                token.claims(claims -> {
+                    if (subject == null) {
+                        claims.remove("sub");
+                    } else {
+                        claims.put("sub", subject);
+                    }
+                })
+        );
+
+        UUID reservationId = UUID.randomUUID();
+
+        mockMvc.perform(post("/api/v1/reservations")
+                        .with(authentication)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "bikeId": "%s",
+                                "durationHours": 48
+                            }
+                            """.formatted(UUID.randomUUID())))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/reservations")
+                        .with(authentication))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/reservations/{id}", reservationId)
+                        .with(authentication))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/v1/reservations/{id}/cancel", reservationId)
+                        .with(authentication))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(bikeReservationGateway);
