@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -25,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -33,6 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
 
     private static final Instant START = Instant.parse("2026-09-15T00:00:00Z");
+
+    private static RequestPostProcessor asCustomer(UUID userId) {
+        return jwt().jwt(token -> token.subject(userId.toString()));
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -71,8 +77,9 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldReturnAndCompleteRentalAcrossRequests() throws Exception {
+        UUID userId = UUID.randomUUID();
         UUID bikeId = UUID.randomUUID();
-        String id = createRental(UUID.randomUUID(), bikeId, UUID.randomUUID());
+        String id = createRental(userId, bikeId, UUID.randomUUID());
         verify(bikeRentalGateway).startRental(eq(bikeId), any(UUID.class));
         UUID returnStation = UUID.randomUUID();
         Instant returnedAt = START.plusSeconds(3600);
@@ -80,6 +87,7 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
 
         mockMvc.perform(post("/api/v1/rentals/{id}/return", id)
                         .contentType(APPLICATION_JSON)
+                        .with(asCustomer(userId))
                         .content("""
                                 {"stationId": "%s"}
                                 """.formatted(returnStation)))
@@ -93,7 +101,10 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
         assertThat(rentalRepository.findById(UUID.fromString(id)).orElseThrow().getVersion()).isEqualTo(1L);
         verify(bikeRentalGateway).returnBike(eq(bikeId), eq(returnStation), any(UUID.class));
 
-        mockMvc.perform(post("/api/v1/rentals/{id}/complete", id))
+        mockMvc.perform(
+                    post("/api/v1/rentals/{id}/complete", id)
+                            .with(asCustomer(userId))
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
@@ -106,10 +117,10 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"userId", "bikeId", "stationId", "dailyRate"})
+    @ValueSource(strings = {"bikeId", "stationId", "dailyRate"})
     void shouldRejectMissingRequiredCreateField(String field) throws Exception {
+        UUID userId = UUID.randomUUID();
         var body = new HashMap<String, Object>();
-        body.put("userId", UUID.randomUUID().toString());
         body.put("bikeId", UUID.randomUUID().toString());
         body.put("stationId", UUID.randomUUID().toString());
         body.put("dailyRate", 25);
@@ -117,6 +128,7 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
 
         mockMvc.perform(post("/api/v1/rentals")
                         .contentType(APPLICATION_JSON)
+                        .with(asCustomer(userId))
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
 
@@ -125,7 +137,9 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldRejectMissingReturnStation() throws Exception {
+        UUID userId = UUID.randomUUID();
         mockMvc.perform(post("/api/v1/rentals/{id}/return", UUID.randomUUID())
+                        .with(asCustomer(userId))
                         .contentType(APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(bikeRentalGateway);
@@ -133,7 +147,9 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldRejectMalformedRentalId() throws Exception {
-        mockMvc.perform(post("/api/v1/rentals/{id}/complete", "invalid-id"))
+        UUID userId = UUID.randomUUID();
+        mockMvc.perform(post("/api/v1/rentals/{id}/complete", "invalid-id")
+                        .with(asCustomer(userId)))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(bikeRentalGateway);
     }
@@ -141,6 +157,7 @@ class RentalControllerIntegrationTest extends AbstractPostgresIntegrationTest {
     private String createRental(UUID userId, UUID bikeId, UUID stationId) throws Exception {
         String response = mockMvc.perform(post("/api/v1/rentals")
                         .contentType(APPLICATION_JSON)
+                        .with(asCustomer(userId))
                         .content("""
                                 {"userId": "%s", "bikeId": "%s", "stationId": "%s", "dailyRate": 25.00}
                                 """.formatted(userId, bikeId, stationId)))

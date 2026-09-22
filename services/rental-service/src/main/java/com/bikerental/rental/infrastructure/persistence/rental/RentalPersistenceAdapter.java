@@ -31,6 +31,12 @@ public class RentalPersistenceAdapter
     }
 
     @Override
+    public Optional<Rental> findByIdAndUserId(UUID rentalId, UUID userId) {
+        return repository.findByIdAndUserId(rentalId, userId)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public boolean existsByUserIdAndStatus(
             UUID userId,
             RentalStatus status

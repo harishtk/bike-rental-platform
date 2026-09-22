@@ -1,8 +1,10 @@
 package com.bikerental.rental.infrastructure.persistence.rental;
 
+import com.bikerental.rental.domain.rental.Rental;
 import com.bikerental.rental.domain.rental.RentalStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface SpringDataRentalRepository
@@ -17,4 +19,6 @@ public interface SpringDataRentalRepository
             UUID bikeId,
             RentalStatus status
     );
+
+    Optional<RentalEntity> findByIdAndUserId(UUID rentalId, UUID userId);
 }

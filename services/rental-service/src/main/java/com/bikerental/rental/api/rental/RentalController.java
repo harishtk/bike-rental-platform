@@ -1,10 +1,13 @@
 package com.bikerental.rental.api.rental;
 
+import com.bikerental.rental.api.security.CustomerIdentity;
 import com.bikerental.rental.application.rental.RentalService;
 import com.bikerental.rental.domain.rental.Rental;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -20,12 +23,15 @@ public class RentalController {
     @PostMapping
     public ResponseEntity<RentalResponse> create(
             @Valid @RequestBody
-            CreateRentalRequest request
-    ) {
+            CreateRentalRequest request,
+            @AuthenticationPrincipal Jwt jwt
+            ) {
+        UUID userId = CustomerIdentity.userId(jwt);
+
         return ResponseEntity.ok(
                 mapper.toResponse(
                         rentalService.startRental(
-                                request.userId(),
+                                userId,
                                 request.bikeId(),
                                 request.stationId(),
                                 request.dailyRate()
@@ -38,11 +44,15 @@ public class RentalController {
     public ResponseEntity<RentalResponse> returnRental(
             @PathVariable UUID rentalId,
             @Valid @RequestBody
-            ReturnRentalRequest request
+            ReturnRentalRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = CustomerIdentity.userId(jwt);
+
         return ResponseEntity.ok(
                 mapper.toResponse(
                         rentalService.returnRental(
+                                userId,
                                 rentalId,
                                 request.stationId()
                         )

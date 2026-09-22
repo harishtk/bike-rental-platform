@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record CreateRentalRequest(
-        @NotNull UUID userId,
         @NotNull UUID bikeId,
         @NotNull UUID stationId,
         @NotNull BigDecimal dailyRate

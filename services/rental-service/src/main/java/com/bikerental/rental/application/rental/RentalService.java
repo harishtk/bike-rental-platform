@@ -68,12 +68,13 @@ public class RentalService {
 
     @Transactional
     public Rental returnRental(
+            UUID userId,
             UUID rentalId,
             UUID stationId
     ) {
         Rental rental =
-                rentalRepository.findById(rentalId)
-                        .orElseThrow();
+                rentalRepository.findByIdAndUserId(rentalId, userId)
+                        .orElseThrow(() -> new RentalNotFoundException(rentalId));
 
         Instant now =
                 Instant.now(clock);

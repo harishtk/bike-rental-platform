@@ -49,10 +49,11 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
     @ParameterizedTest
     @CsvSource({"0, 25.00", "3600, 25.00", "86400, 25.00", "86401, 50.00", "172800, 50.00"})
     void shouldChargeAtLeastOneDayAndRoundUpPartialDays(long seconds, String expectedTotal) {
-        Rental started = startRental();
+        UUID userId = UUID.randomUUID();
+        Rental started = startRental(userId);
         when(clock.instant()).thenReturn(START.plusSeconds(seconds));
 
-        Rental returned = rentalService.returnRental(started.getId(), UUID.randomUUID());
+        Rental returned = rentalService.returnRental(userId, started.getId(), UUID.randomUUID());
 
         assertThat(returned.getTotalAmount()).isEqualByComparingTo(expectedTotal);
         var stored = rentalRepository.findById(started.getId()).orElseThrow();
@@ -62,7 +63,8 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldRejectSecondActiveRentalForSameUser() {
-        Rental first = startRental();
+        UUID userId = UUID.randomUUID();
+        Rental first = startRental(userId);
         UUID otherBike = UUID.randomUUID();
 
         assertThatThrownBy(() -> rentalService.startRental(first.getUserId(), otherBike,
@@ -76,7 +78,8 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldRejectSecondActiveRentalForSameBike() {
-        Rental first = startRental();
+        UUID userId = UUID.randomUUID();
+        Rental first = startRental(userId);
         UUID otherUser = UUID.randomUUID();
 
         assertThatThrownBy(() -> rentalService.startRental(otherUser, first.getBikeId(),
@@ -90,8 +93,9 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldAllowNewRentalAfterPreviousRentalIsCompleted() {
-        Rental first = startRental();
-        rentalService.returnRental(first.getId(), UUID.randomUUID());
+        UUID userId = UUID.randomUUID();
+        Rental first = startRental(userId);
+        rentalService.returnRental(first.getUserId(), first.getId(), UUID.randomUUID());
         rentalService.completeRental(first.getId());
 
         Rental next = rentalService.startRental(first.getUserId(), first.getBikeId(),
@@ -105,7 +109,8 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldRejectCompletionBeforeReturn() {
-        Rental started = startRental();
+        UUID userId = UUID.randomUUID();
+        Rental started = startRental(userId);
 
         assertThatThrownBy(() -> rentalService.completeRental(started.getId()))
                 .isInstanceOf(IllegalStateException.class)
@@ -117,11 +122,12 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldRejectRepeatedReturnWithoutChangingStoredRental() {
-        Rental started = startRental();
+        UUID userId = UUID.randomUUID();
+        Rental started = startRental(userId);
         UUID station = UUID.randomUUID();
-        rentalService.returnRental(started.getId(), station);
+        rentalService.returnRental(userId, started.getId(), station);
 
-        assertThatThrownBy(() -> rentalService.returnRental(started.getId(), UUID.randomUUID()))
+        assertThatThrownBy(() -> rentalService.returnRental(started.getUserId(), started.getId(), UUID.randomUUID()))
                 .isInstanceOf(IllegalStateException.class);
 
         Rental stored = rentalRepository.findById(started.getId()).orElseThrow();
@@ -132,8 +138,8 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldRejectReturnOfMissingRental() {
-        assertThatThrownBy(() -> rentalService.returnRental(UUID.randomUUID(), UUID.randomUUID()))
-                .isInstanceOf(NoSuchElementException.class);
+        assertThatThrownBy(() -> rentalService.returnRental(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()))
+                .isInstanceOf(RentalNotFoundException.class);
         verifyNoInteractions(bikeRentalGateway);
     }
 
@@ -162,12 +168,13 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
 
     @Test
     void shouldKeepRentalActiveWhenBikeReturnFails() {
-        Rental started = startRental();
+        UUID userId = UUID.randomUUID();
+        Rental started = startRental(userId);
         UUID station = UUID.randomUUID();
         doThrow(new IllegalStateException("Bike service unavailable"))
                 .when(bikeRentalGateway).returnBike(eq(started.getBikeId()), eq(station), any(UUID.class));
 
-        assertThatThrownBy(() -> rentalService.returnRental(started.getId(), station))
+        assertThatThrownBy(() -> rentalService.returnRental(started.getUserId(), started.getId(), station))
                 .isInstanceOf(IllegalStateException.class).hasMessage("Bike service unavailable");
 
         Rental stored = rentalRepository.findById(started.getId()).orElseThrow();
@@ -178,7 +185,7 @@ class RentalServiceIntegrationTest extends AbstractPostgresIntegrationTest {
         assertThat(stored.getVersion()).isZero();
     }
 
-    private Rental startRental() {
-        return rentalService.startRental(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), DAILY_RATE);
+    private Rental startRental(UUID userId) {
+        return rentalService.startRental(userId, UUID.randomUUID(), UUID.randomUUID(), DAILY_RATE);
     }
 }
