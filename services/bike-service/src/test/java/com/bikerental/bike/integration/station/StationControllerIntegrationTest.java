@@ -4,14 +4,19 @@ import com.bikerental.bike.integration.AbstractPostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+import java.util.UUID;
 
 import static com.jayway.jsonpath.JsonPath.*;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -25,6 +30,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 )
 public class StationControllerIntegrationTest extends
         AbstractPostgresIntegrationTest {
+
+    private static RequestPostProcessor admin() {
+        return jwt()
+                .jwt(token -> token
+                        .subject(UUID.randomUUID().toString()))
+                .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    }
+
+    private static RequestPostProcessor customer() {
+        return jwt()
+                .jwt(token -> token
+                        .subject(UUID.randomUUID().toString()))
+                .authorities(new SimpleGrantedAuthority("ROLE_USER"));
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,6 +60,7 @@ public class StationControllerIntegrationTest extends
 
         mockMvc.perform(
                 post("/api/v1/stations")
+                        .with(admin())
                         .contentType(APPLICATION_JSON)
                         .content(request)
         )
@@ -75,6 +95,7 @@ public class StationControllerIntegrationTest extends
 
         String response = mockMvc.perform(
                 post("/api/v1/stations")
+                        .with(admin())
                         .contentType(APPLICATION_JSON)
                         .content(request)
         )
@@ -87,6 +108,7 @@ public class StationControllerIntegrationTest extends
 
         mockMvc.perform(
                 get("/api/v1/stations/{stationId}", stationId)
+                        .with(customer())
         )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(
@@ -103,6 +125,7 @@ public class StationControllerIntegrationTest extends
     void shouldReturn404WhenStationDoesNotExist() throws Exception {
         mockMvc.perform(
                 get("/api/v1/stations/{stationId}", "018f9dd7-7d9a-7f85-ae7c-5c97e2c5dc24")
+                        .with(customer())
         )
                 .andExpect(status().isNotFound());
     }
@@ -123,6 +146,7 @@ public class StationControllerIntegrationTest extends
 
         mockMvc.perform(
                         get("/api/v1/stations")
+                                .with(customer())
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
@@ -140,6 +164,7 @@ public class StationControllerIntegrationTest extends
 
         mockMvc.perform(
                         post("/api/v1/stations")
+                                .with(admin())
                                 .contentType(APPLICATION_JSON)
                                 .content(request)
                 )
@@ -178,6 +203,7 @@ public class StationControllerIntegrationTest extends
 
         mockMvc.perform(
                 post("/api/v1/stations")
+                        .with(admin())
                         .contentType(APPLICATION_JSON)
                         .content(request)
         ).andExpect(status().isCreated());

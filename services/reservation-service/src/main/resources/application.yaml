@@ -47,6 +47,12 @@ logging:
 clients:
   bike-service:
     url: ${BIKE_SERVICE_URL:http://localhost:8080}
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8003}
+
+service-auth:
+  client-id: reservation-service
+  client-secret: ${RESERVATION_SERVICE_SECRET}
 
 reservation:
   expiration:

@@ -1,0 +1,4 @@
+auth:
+  service-clients:
+    reservation-secret: test-reservation-secret
+    rental-secret: test-rental-secret

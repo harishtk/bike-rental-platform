@@ -187,3 +187,19 @@ trigger so required checks also run for queued merges.
 2. Image scanning, registry publication, and immutable release manifests.
 3. Staging/production deployment configuration and rollback procedures.
 4. Infrastructure-as-code after choosing the deployment target.
+
+
+### Service credentials for local and CI runs
+
+Copy `.env.example` to `.env` at the repository root and fill in distinct random
+values for `RESERVATION_SERVICE_SECRET` and `RENTAL_SERVICE_SECRET`. The `.env`
+file is ignored by Git. Empty placeholders intentionally fail Compose validation.
+Both pipeline scripts pass this root file to Compose when it exists; environment
+variables take precedence. Root development Compose also reads the root `.env`.
+
+For GitHub Actions, create repository secrets with those exact names under
+**Settings > Secrets and variables > Actions**. The E2E step passes them to the
+pipeline; the values are not stored in the workflow. Use dedicated CI credentials.
+Fork pull requests do not receive repository secrets, so their E2E step cannot
+run with this configuration until a trusted run has access to the credentials.
+Do not use `pull_request_target` to expose secrets to untrusted PR code.

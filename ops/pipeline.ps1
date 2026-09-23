@@ -120,6 +120,12 @@ function Invoke-EndToEndTests {
         "compose", "-p", $project, "-f", $composeFile
     )
 
+    # Local runs may use the ignored root .env; CI supplies process environment values.
+    $serviceEnvFile = Join-Path $repoRoot ".env"
+    if (Test-Path -LiteralPath $serviceEnvFile -PathType Leaf) {
+        $composeArgs += @("--env-file", $serviceEnvFile)
+    }
+
     # Save caller settings and restore them even if startup or tests fail.
     $previousImageTag = $env:IMAGE_TAG
     $previousGatewayUrl = $env:API_GATEWAY_URL

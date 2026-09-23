@@ -215,6 +215,12 @@ run_e2e() (
         -f "$compose_file"
     )
 
+    # Local runs may use the ignored root .env; CI supplies process environment values.
+    # Compose parses this file as data; never source it as a shell script.
+    if [[ -f "$repo_root/.env" ]]; then
+        compose+=(--env-file "$repo_root/.env")
+    fi
+
     # These exports are confined to this function's subshell.
     export IMAGE_TAG="$image_tag"
 

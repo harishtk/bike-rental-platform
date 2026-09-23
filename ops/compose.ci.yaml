@@ -15,6 +15,9 @@ services:
       EUREKA_URL: http://discovery-service:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
 
+      JWT_ISSUER: http://auth-service:8003
+      JWT_JWK_SET_URI: http://auth-service:8003/.well-known/jwks.json
+
     depends_on:
       bike-db:
         condition: service_healthy
@@ -71,6 +74,8 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
       BIKE_SERVICE_URL: http://bike-service:8000
+      AUTH_SERVICE_URL: http://auth-service:8003
+      RESERVATION_SERVICE_SECRET: ${RESERVATION_SERVICE_SECRET:?Set RESERVATION_SERVICE_SECRET}
 
       EUREKA_URL: http://discovery-service:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
@@ -120,6 +125,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
 
       BIKE_SERVICE_URL: http://bike-service:8000
+      AUTH_SERVICE_URL: http://auth-service:8003
+      RENTAL_SERVICE_SECRET: ${RENTAL_SERVICE_SECRET:?Set RENTAL_SERVICE_SECRET}
 
       EUREKA_URL: http://discovery-service:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
@@ -128,6 +135,8 @@ services:
       JWT_JWK_SET_URI: http://auth-service:8003/.well-known/jwks.json
 
     depends_on:
+      auth-service:
+        condition: service_healthy
       rental-db:
         condition: service_healthy
       bike-service:
@@ -190,8 +199,13 @@ services:
       JWT_ISSUER: http://auth-service:8003
       JWT_ACCESS_TOKEN_TTL: 3600
 
+      RESERVATION_SERVICE_SECRET: ${RESERVATION_SERVICE_SECRET:?Set RESERVATION_SERVICE_SECRET}
+      RENTAL_SERVICE_SECRET: ${RENTAL_SERVICE_SECRET:?Set RENTAL_SERVICE_SECRET}
+
       EUREKA_URL: http://discovery-service:8761/eureka
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      SPRING_PROFILES_ACTIVE: e2e
 
     depends_on:
       auth-db:

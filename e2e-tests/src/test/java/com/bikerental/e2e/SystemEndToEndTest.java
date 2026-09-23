@@ -128,6 +128,25 @@ public class SystemEndToEndTest {
         assertThat(userId)
                 .isNotBlank();
 
+        String adminAccessToken = loginAsAdmin();
+
+        given()
+                .filter(HTTP_LOGGING)
+                .baseUri(gatewayUrl)
+                .auth()
+                .oauth2(accessToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                {
+                    "name": "Unauthorized station",
+                    "address": "Test address",
+                    "capacity": 10
+                }
+                """)
+                .when()
+                .post("/api/v1/stations")
+                .then()
+                .statusCode(403);
 
         /*
          * ============================================================
@@ -142,7 +161,7 @@ public class SystemEndToEndTest {
                         .filter(HTTP_LOGGING)
                         .baseUri(gatewayUrl)
                         .auth()
-                        .oauth2(accessToken)
+                        .oauth2(adminAccessToken)
                         .contentType(ContentType.JSON)
                         .body("""
                                 {
@@ -177,7 +196,7 @@ public class SystemEndToEndTest {
                         .filter(HTTP_LOGGING)
                         .baseUri(gatewayUrl)
                         .auth()
-                        .oauth2(accessToken)
+                        .oauth2(adminAccessToken)
                         .contentType(ContentType.JSON)
                         .body("""
                                 {
@@ -215,7 +234,7 @@ public class SystemEndToEndTest {
                         .filter(HTTP_LOGGING)
                         .baseUri(gatewayUrl)
                         .auth()
-                        .oauth2(accessToken)
+                        .oauth2(adminAccessToken)
                         .contentType(ContentType.JSON)
                         .body("""
                                 {
@@ -257,12 +276,10 @@ public class SystemEndToEndTest {
                         .contentType(ContentType.JSON)
                         .body("""
                                 {
-                                    "userId": "%s",
                                     "bikeId": "%s",
                                     "durationHours": 2
                                 }
                                 """.formatted(
-                                userId,
                                 reservationBikeId
                         ))
                         .when()
@@ -280,6 +297,10 @@ public class SystemEndToEndTest {
                         .body(
                                 "status",
                                 equalTo("ACTIVE")
+                        )
+                        .body(
+                                "userId",
+                                equalTo(userId)
                         )
                         .extract()
                         .path("id");
@@ -307,13 +328,11 @@ public class SystemEndToEndTest {
                         .contentType(ContentType.JSON)
                         .body("""
                                 {
-                                    "userId": "%s",
                                     "bikeId": "%s",
                                     "stationId": "%s",
                                     "dailyRate": 100.00
                                 }
                                 """.formatted(
-                                userId,
                                 rentalBikeId,
                                 stationId
                         ))
@@ -332,6 +351,10 @@ public class SystemEndToEndTest {
                         .body(
                                 "status",
                                 equalTo("ACTIVE")
+                        )
+                        .body(
+                                "userId",
+                                equalTo(userId)
                         )
                         .extract()
                         .path("id");
@@ -389,7 +412,7 @@ public class SystemEndToEndTest {
          */
 
         log.debug("Rental returned: rentalId={}, stationId={}", rentalId, stationId);
-        log.info("Step 9/9: Complete rental");
+        log.info("Step 9/9: Verify customer cannot complete rental");
 
         // We'll keep the /complete endpoint private until a payment servie is implemented.
         given()
@@ -404,7 +427,7 @@ public class SystemEndToEndTest {
                 )
                 .then()
                 .statusCode(403);
-        log.debug("Rental completed: rentalId={}", rentalId);
+        log.debug("Customer completion correctly denied: rentalId={}", rentalId);
         log.info("Full bike reservation and rental workflow passed in {} ms",
                 (System.nanoTime() - workflowStarted) / 1_000_000);
     }
@@ -438,5 +461,25 @@ public class SystemEndToEndTest {
         return io.restassured.path.json.JsonPath
                 .from(payload)
                 .getString("sub");
+    }
+
+    private static String loginAsAdmin() {
+        return given()
+                .filter(HTTP_LOGGING)
+                .baseUri(gatewayUrl)
+                .contentType(ContentType.JSON)
+                .body("""
+                    {
+                        "username": "e2e-admin",
+                        "password": "e2e-admin-test-only"
+                    }
+                    """)
+                .when()
+                .post("/api/v1/auth/login")
+                .then()
+                .statusCode(200)
+                .body("accessToken", notNullValue())
+                .extract()
+                .path("accessToken");
     }
 }

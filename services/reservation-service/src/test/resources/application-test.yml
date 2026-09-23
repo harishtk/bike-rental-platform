@@ -29,6 +29,10 @@ eureka:
   client:
     enabled: false
 
+service-auth:
+  client-id: reservation-service
+  client-secret: test-reservation-secret
+
 logging:
   level:
     org.hibernate.SQL: warn

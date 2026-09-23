@@ -30,6 +30,9 @@ auth:
   jwt:
     issuer: ${JWT_ISSUER:http://localhost:8003}
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:3600}
+  service-clients:
+    reservation-secret: ${RESERVATION_SERVICE_SECRET}
+    rental-secret: ${RENTAL_SERVICE_SECRET}
 
 management:
   endpoints:

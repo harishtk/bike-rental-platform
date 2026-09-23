@@ -121,6 +121,10 @@ jobs:
           path: build/security/
 
       - name: Run E2E tests
+        env:
+          # Configure these repository secrets in GitHub Actions settings.
+          RESERVATION_SERVICE_SECRET: ${{ secrets.RESERVATION_SERVICE_SECRET }}
+          RENTAL_SERVICE_SECRET: ${{ secrets.RENTAL_SERVICE_SECRET }}
         run: bash ops/pipeline.sh e2e ${{ github.sha }}
 
       - name: Upload E2E reports
