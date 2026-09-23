@@ -211,7 +211,6 @@ function Invoke-EndToEndTests {
                         -Method $route.Method `
                         -Headers $headers `
                         -TimeoutSec 5 `
-                        -Verbose
 
                 if ($response.StatusCode -ne 200) {
                     throw "Unexpected status: $($response.StatusCode)"

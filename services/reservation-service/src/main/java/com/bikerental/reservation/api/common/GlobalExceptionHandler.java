@@ -2,6 +2,7 @@ package com.bikerental.reservation.api.common;
 
 import com.bikerental.reservation.application.reservation.ActiveReservationAlreadyExistsException;
 import com.bikerental.reservation.application.reservation.ReservationNotFoundException;
+import com.bikerental.reservation.domain.reservation.InvalidReservationStateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -101,6 +102,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
+    }
+
+    @ExceptionHandler(InvalidReservationStateException.class)
+    public ResponseEntity<ErrorResponse<Object>> handleInvalidReservationState(
+            InvalidReservationStateException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.create(
+                        HttpStatus.CONFLICT.value(),
+                        "INVALID_RESERVATION_STATE",
+                        exception.getMessage(),
+                        null
+                ));
     }
 
     public record ValidationError(

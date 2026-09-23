@@ -130,6 +130,9 @@ services:
 
       EUREKA_URL: http://discovery-service:8761/eureka
 
+      JWT_ISSUER: http://auth-service:8003
+      JWT_JWK_SET_URI: http://auth-service:8003/.well-known/jwks.json
+
     depends_on:
       rental-db:
         condition: service_healthy

@@ -9,6 +9,8 @@ public interface RentalRepository {
 
     Optional<Rental> findById(UUID rentalId);
 
+    Optional<Rental> findByIdAndUserId(UUID rentalId, UUID userId);
+
     boolean existsByUserIdAndStatus(
             UUID userId,
             RentalStatus status
