@@ -2,6 +2,7 @@ package com.bikerental.auth.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,7 +29,11 @@ public class SecurityConfiguration {
                                         "/actuator/health"
                                 )
                                 .permitAll()
-
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/internal/auth/service-token"
+                                )
+                                .permitAll()
                                 .anyRequest()
                                 .authenticated()
                 )

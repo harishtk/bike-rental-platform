@@ -1,5 +1,6 @@
 package com.bikerental.reservation.infrastructure.client.bike;
 
+import com.bikerental.reservation.infrastructure.config.BikeClientSecurityConfiguration;
 import com.bikerental.reservation.infrastructure.config.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,7 +11,10 @@ import java.util.UUID;
 
 @FeignClient(
         name = "bike-service",
-        configuration = {FeignConfig.class}
+        configuration = {
+                FeignConfig.class,
+                BikeClientSecurityConfiguration.class
+        }
 )
 public interface BikeFeignClient {
 

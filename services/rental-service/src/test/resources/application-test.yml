@@ -15,6 +15,10 @@ eureka:
   client:
     enabled: false
 
+service-auth:
+  client-id: rental-service
+  client-secret: test-rental-secret
+
 logging:
   level:
     org.hibernate.SQL: warn

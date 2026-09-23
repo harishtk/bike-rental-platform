@@ -53,3 +53,8 @@ jacoco.exec
 # === Logs ===
 logs/
 *.log
+
+# Local service credentials
+.env
+.env.*
+!.env.example

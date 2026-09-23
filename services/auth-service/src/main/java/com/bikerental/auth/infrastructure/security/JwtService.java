@@ -78,4 +78,32 @@ public class JwtService {
     public long getAccessTokenTtl() {
         return accessTokenTtl;
     }
+
+    public String createServiceAccessToken(
+            String clientId,
+            String scope,
+            long ttlSeconds
+    ) {
+        Instant now =
+                Instant.now(clock);
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(issuer)
+                .subject(clientId)
+                .audience(List.of("bike-service"))
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(ttlSeconds))
+                .claim("token_kind", "service")
+                .claim("scope", scope)
+                .build();
+
+        JwsHeader header = JwsHeader
+                .with(SignatureAlgorithm.RS256)
+                .keyId(rsaKey.getKeyID())
+                .build();
+
+        return jwtEncoder.encode(
+                JwtEncoderParameters.from(header, claims)
+        ).getTokenValue();
+    }
 }

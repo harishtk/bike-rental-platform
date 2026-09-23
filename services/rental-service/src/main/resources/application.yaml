@@ -39,3 +39,9 @@ eureka:
 clients:
   bike-service:
     url: ${BIKE_SERVICE_URL:http://localhost:8000}
+  auth-service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8003}
+
+service-auth:
+  client-id: rental-service
+  client-secret: ${RENTAL_SERVICE_SECRET}

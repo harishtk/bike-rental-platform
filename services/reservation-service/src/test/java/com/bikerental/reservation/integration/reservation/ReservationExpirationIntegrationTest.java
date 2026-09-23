@@ -2,12 +2,14 @@ package com.bikerental.reservation.integration.reservation;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.UUID;
 
 import com.bikerental.reservation.ReservationServiceApplication;
 import com.bikerental.reservation.application.reservation.ReservationExpirationService;
+import com.bikerental.reservation.infrastructure.security.ServiceTokenProvider;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -57,6 +60,9 @@ class ReservationExpirationIntegrationTest {
 
     @Autowired
     private ReservationExpirationService expirationService;
+
+    @MockitoBean
+    private ServiceTokenProvider serviceTokenProvider;
 
     private UUID reservationId;
     private UUID userId;
@@ -115,6 +121,9 @@ class ReservationExpirationIntegrationTest {
         userId = UUID.randomUUID();
         bikeId = UUID.randomUUID();
         stationId = UUID.randomUUID();
+
+        when(serviceTokenProvider.accessToken())
+                .thenReturn("test-service-token");
     }
 
     @Test

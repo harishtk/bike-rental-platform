@@ -27,7 +27,12 @@ public class SecurityConfiguration {
                                         "/actuator/**"
                                 )
                                 .permitAll()
-
+                                .pathMatchers(
+                                        "/api/v1/bikes/*/reserve",
+                                        "/api/v1/bikes/*/release",
+                                        "/api/v1/bikes/*/rent",
+                                        "/api/v1/bikes/*/return"
+                                ).denyAll()
                                 .anyExchange()
                                 .authenticated()
                 )
